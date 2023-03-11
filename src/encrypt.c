@@ -47,7 +47,7 @@
  *	Kc, Iv, Ki = KMAC256(K, X, "NYFE.KDF")[88]
  *
  * 	ct = XChaCha20(Kc, Iv, pt)
- *	mac = KMAC256(Ki, Rs || Id || Len || ct, "NYFE.INTEGRITY")[32]
+ *	mac = KMAC256(Ki, Rs || Id || Len || ct, "NYFE.INTEGRITY")[64]
  *
  *	file = Rs || Id || ct || mac
  */
