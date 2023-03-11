@@ -274,7 +274,7 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 	PRECOND(salt != NULL);
 	PRECOND(salt_len == KEY_FILE_SALT_LEN);
 	PRECOND(out != NULL);
-	PRECOND(out_len == 32);
+	PRECOND(out_len == NYFE_KEY_LEN);
 
 	/* Allocate large intermediate buffers. */
 	if ((tmp = calloc(1, PASSPHRASE_KDF_MEM_SIZE)) == NULL)
@@ -292,7 +292,7 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 
 	/*
 	 * Run the passphrase and the salt through SHAKE256() to obtain
-	 * 256 bytes of output. This output is used to generate the
+	 * 512 bytes of output. This output is used to generate the
 	 * intermediate plaintext data, and the access patterns.
 	 */
 	nyfe_xof_shake256_init(&shake);
