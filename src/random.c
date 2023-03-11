@@ -16,10 +16,14 @@
 
 #include <sys/param.h>
 #include <sys/types.h>
+
+#if defined(__APPLE__)
 #include <sys/random.h>
+#endif
 
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "nyfe.h"
 
