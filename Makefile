@@ -33,8 +33,11 @@ SRC=	src/nyfe.c \
 
 OBJS=	$(SRC:src/%.c=$(OBJDIR)/%.o)
 
-all: $(OBJDIR) $(OBJS)
+$(BIN): $(OBJDIR) $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $(BIN)
+
+install: $(BIN)
+	install -m 555 $(BIN) /usr/local/bin/$(BIN)
 
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)
