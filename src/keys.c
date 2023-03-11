@@ -67,7 +67,7 @@
  *	return KMAC256(Km, X, "NYFE.PASSPHRASE.KDF")[32]
  */
 
-/* Passphrase KDF settings, will use 16MB memory, 65536 iterations. */
+/* Passphrase KDF settings, will use 32MB memory, 65536 iterations. */
 #define PASSPHRASE_KDF_ITERATIONS	65536
 #define PASSPHRASE_KDF_MEM_SIZE		(1024 * 1024 * 32)
 #define PASSPHRASE_KDF_STEP_LEN		\
