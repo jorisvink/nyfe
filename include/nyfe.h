@@ -22,6 +22,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Apple .. */
+#if defined(__APPLE__)
+#include <libkern/OSByteOrder.h>
+#define htobe64(x)		OSSwapHostToBigInt64(x)
+#endif
+
 /* Some handy macros. */
 #define errno_s			strerror(errno)
 

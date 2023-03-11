@@ -103,8 +103,8 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	struct nyfe_kmac256		kmac;
 	struct nyfe_xchacha20		cipher;
 	u_int8_t			*block;
-	u_int64_t			filelen;
 	int				src, dst;
+	u_int64_t			filelen;
 	u_int8_t			seed[NYFE_SEED_LEN], mac[NYFE_MAC_LEN];
 
 	PRECOND(in != NULL);
@@ -136,6 +136,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	nyfe_zeroize(&key, sizeof(key));
 
 	/* Add the original file length to the integrity protection. */
+	filelen = htobe64(filelen);
 	nyfe_kmac256_update(&kmac, &filelen, sizeof(filelen));
 
 	/*
@@ -184,8 +185,8 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	struct nyfe_xchacha20	cipher;
 	u_int8_t		*block;
 	size_t			toread;
-	u_int64_t		filelen;
 	int			src, dst;
+	u_int64_t		filelen, swapped;
 	u_int8_t		seed[NYFE_SEED_LEN];
 	u_int8_t		mac[NYFE_MAC_LEN], expected[NYFE_MAC_LEN];
 
@@ -234,7 +235,8 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	 * integrity protection.
 	 */
 	filelen -= sizeof(seed) + sizeof(mac);
-	nyfe_kmac256_update(&kmac, &filelen, sizeof(filelen));
+	swapped = htobe64(filelen);
+	nyfe_kmac256_update(&kmac, &swapped, sizeof(swapped));
 
 	/*
 	 * Read data from the encrypted file, updating the kmac context
