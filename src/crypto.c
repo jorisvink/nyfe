@@ -162,7 +162,6 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	free(block);
 
 	/* Add the original file length to the integrity protection. */
-	printf("%llu\n", filelen);
 	filelen = htobe64(filelen);
 	nyfe_kmac256_update(&kmac, &filelen, sizeof(filelen));
 
