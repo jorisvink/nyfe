@@ -16,7 +16,11 @@
 
 #include <sys/types.h>
 
+#if defined(__linux__)
+#include <bsd/readpassphrase.h>
+#else
 #include <readpassphrase.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
