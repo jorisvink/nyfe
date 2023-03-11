@@ -42,6 +42,9 @@ nyfe_zeroize_register(void *ptr, size_t len)
 {
 	struct zeroize		*z;
 
+	PRECOND(ptr != NULL);
+	PRECOND(len > 0);
+
 	if ((z = calloc(1, sizeof(*z))) == NULL)
 		fatal("failed to allocate zeroize list member");
 
@@ -74,6 +77,9 @@ nyfe_zeroize(void *ptr, size_t len)
 {
 	struct zeroize		*z;
 
+	PRECOND(ptr != NULL);
+	PRECOND(len > 0);
+
 	LIST_FOREACH(z, &zeroize_list, list) {
 		if (z->ptr == ptr && z->length == len) {
 			nyfe_mem_zero(ptr, len);
@@ -98,6 +104,9 @@ void
 nyfe_mem_zero(void *ptr, size_t len)
 {
 	volatile char	*p;
+
+	PRECOND(ptr != NULL);
+	PRECOND(len > 0);
 
 	p = (volatile char *)ptr;
 
