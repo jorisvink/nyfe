@@ -91,6 +91,10 @@ static void	key_generate_secret(struct nyfe_xchacha20 *,
 static void	key_passphrase_kdf(const void *, u_int32_t, const void *,
 		    size_t, u_int8_t *, size_t);
 
+/*
+ * Attempt to verify and decrypt a Nyfe key in the given file.
+ * If successfull the key is returned via the `key` argument.
+ */
 void
 nyfe_key_load(struct nyfe_key *key, const char *file)
 {
@@ -132,6 +136,9 @@ nyfe_key_load(struct nyfe_key *key, const char *file)
 	(void)close(fd);
 }
 
+/*
+ * Generate a new key into the given keyfile.
+ */
 void
 nyfe_key_generate(const char *file)
 {
@@ -187,6 +194,11 @@ nyfe_key_generate(const char *file)
 	}
 }
 
+/*
+ * Helper function to derive the required key material to setup the
+ * XChaCha20 and KMAC256 contexts for confidentiality and integrity
+ * protection on key files.
+ */
 static void
 key_generate_secret(struct nyfe_xchacha20 *cipher, struct nyfe_kmac256 *kmac,
     const u_int8_t *seed, size_t seed_len)
