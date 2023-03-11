@@ -103,8 +103,8 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	struct nyfe_kmac256		kmac;
 	struct nyfe_xchacha20		cipher;
 	u_int8_t			*block;
-	int				src, dst;
 	u_int64_t			filelen;
+	int				src, dst, sig;
 	u_int8_t			seed[NYFE_SEED_LEN], mac[NYFE_MAC_LEN];
 
 	PRECOND(in != NULL);
@@ -146,6 +146,11 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	 */
 	filelen = 0;
 	for (;;) {
+		if ((sig = nyfe_signal_pending()) != -1) {
+			(void)unlink(out);
+			fatal("clean abort due to received signal %d", sig);
+		}
+
 		ret = nyfe_file_read(src, block, BLOCK_SIZE);
 		if (ret == 0)
 			break;

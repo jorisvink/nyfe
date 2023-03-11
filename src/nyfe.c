@@ -27,6 +27,7 @@
 
 #include "nyfe.h"
 
+static void	sighdlr(int);
 static void	cmd_keygen(int, char **);
 static void	cmd_encrypt(int, char **);
 static void	cmd_decrypt(int, char **);
@@ -34,6 +35,8 @@ static void	cmd_decrypt(int, char **);
 static void	usage(void) __attribute__((noreturn));
 static void	usage_keygen(void) __attribute__((noreturn));
 static void	usage_encdec(void) __attribute__((noreturn));
+
+static void	setup_signals(void);
 
 static const struct {
 	const char	*cmd;
@@ -45,11 +48,13 @@ static const struct {
 	{ NULL, NULL },
 };
 
+static volatile sig_atomic_t	sig_recv = -1;
+
 int
 main(int argc, char *argv[])
 {
-	int		i;
-	void		(*cb)(int, char **);
+	int			i;
+	void			(*cb)(int, char **);
 
 	if (argc < 2)
 		usage();
@@ -71,8 +76,8 @@ main(int argc, char *argv[])
 
 	nyfe_selftest_kmac256();
 	nyfe_selftest_xchacha20();
-
 	nyfe_random_init();
+	setup_signals();
 
 	cb(argc, argv);
 
@@ -81,13 +86,21 @@ main(int argc, char *argv[])
 	return (0);
 }
 
+int
+nyfe_signal_pending(void)
+{
+	return (sig_recv);
+}
+
 void
 fatal(const char *fmt, ...)
 {
 	sigset_t	sig;
 	va_list		args;
 
-	sigfillset(&sig);
+	if (sigfillset(&sig) == -1)
+		printf("warning: sigfillset failed\n");
+
 	(void)sigprocmask(SIG_BLOCK, &sig, NULL);
 
 	nyfe_zeroize_all();
@@ -99,6 +112,33 @@ fatal(const char *fmt, ...)
 	fprintf(stderr, "\n");
 
 	exit(1);
+}
+
+static void
+sighdlr(int sig)
+{
+	sig_recv = sig;
+}
+
+static void
+setup_signals(void)
+{
+	struct sigaction	sa;
+
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = sighdlr;
+
+	if (sigfillset(&sa.sa_mask) == -1)
+		fatal("sigfillset failed");
+
+	if (sigaction(SIGQUIT, &sa, NULL) == -1)
+		fatal("sigaction: %s", errno_s);
+	if (sigaction(SIGHUP, &sa, NULL) == -1)
+		fatal("sigaction: %s", errno_s);
+	if (sigaction(SIGTERM, &sa, NULL) == -1)
+		fatal("sigaction: %s", errno_s);
+	if (sigaction(SIGINT, &sa, NULL) == -1)
+		fatal("sigaction: %s", errno_s);
 }
 
 static void

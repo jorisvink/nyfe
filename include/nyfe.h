@@ -116,6 +116,7 @@ struct nyfe_key {
 } __attribute__((packed));
 
 /* src/nyfe.c */
+int	nyfe_signal_pending(void);
 void	fatal(const char *, ...) __attribute__((noreturn));
 
 /* src/crypto.c */
