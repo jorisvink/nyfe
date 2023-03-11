@@ -314,6 +314,8 @@ keccak1600_chi(struct nyfe_keccak1600 *ctx)
 	int		y, x;
 	u_int64_t	tmp[5][5];
 
+	PRECOND(ctx != NULL);
+
 	memcpy(tmp, ctx->A, sizeof(ctx->A));
 
 	/*
