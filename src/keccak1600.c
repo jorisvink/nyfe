@@ -53,7 +53,7 @@ static const u_int8_t rho_offsets[5][5] = {
 /*
  * Precalculated round constants for the Iota step.
  */
-static const uint64_t iota_rc[] = {
+static const u_int64_t iota_rc[] = {
 	0x0000000000000001,
 	0x0000000000008082,
 	0x800000000000808a,
