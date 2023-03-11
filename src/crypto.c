@@ -47,7 +47,7 @@
  *	Kc, Iv, Ki = KMAC256(K, X, "NYFE.KDF")[88]
  *
  * 	ct = XChaCha20(Kc, Iv, pt)
- *	mac = KMAC256(Ki, Rs || Id || Len || ct, "NYFE.INTEGRITY")[64]
+ *	mac = KMAC256(Ki, Rs || Id || ct || Len, "NYFE.INTEGRITY")[64]
  *
  *	file = Rs || Id || ct || mac
  */
@@ -111,6 +111,9 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	PRECOND(out != NULL);
 	PRECOND(keyfile != NULL);
 
+	/* Open the destination early, so we exit early if we can't do it. */
+	dst = nyfe_file_open(out, NYFE_FILE_CREATE);
+
 	/*
 	 * Verify and decrypt the selected keyfile.
 	 * This automatically registers key as sensitive data.
@@ -121,10 +124,12 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	if ((block = calloc(1, BLOCK_SIZE)) == NULL)
 		fatal("failed to allocate encryption buffer");
 
-	/* Open and create the required file on disk. */
-	src = nyfe_file_open(in, NYFE_FILE_READ);
-	dst = nyfe_file_open(out, NYFE_FILE_CREATE);
-	filelen = nyfe_file_size(src);
+	/* If stdin was requested, just set src to STDIN_FILENO. */
+	if (!strcmp(in, "-")) {
+		src = STDIN_FILENO;
+	} else {
+		src = nyfe_file_open(in, NYFE_FILE_READ);
+	}
 
 	/* Generate seed and write it to the destination file. */
 	nyfe_random_bytes(seed, sizeof(seed));
@@ -135,14 +140,11 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	    key.id, sizeof(key.id), &cipher, &kmac);
 	nyfe_zeroize(&key, sizeof(key));
 
-	/* Add the original file length to the integrity protection. */
-	filelen = htobe64(filelen);
-	nyfe_kmac256_update(&kmac, &filelen, sizeof(filelen));
-
 	/*
 	 * Read data from the source file and for each read block
 	 * encrypt it under XChaCha20 and update the KMAC.
 	 */
+	filelen = 0;
 	for (;;) {
 		ret = nyfe_file_read(src, block, BLOCK_SIZE);
 		if (ret == 0)
@@ -152,11 +154,17 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 		nyfe_kmac256_update(&kmac, block, ret);
 
 		nyfe_file_write(dst, block, ret);
+		filelen += ret;
 	}
 
 	/* No longer need block at this point. */
 	nyfe_mem_zero(block, BLOCK_SIZE);
 	free(block);
+
+	/* Add the original file length to the integrity protection. */
+	printf("%llu\n", filelen);
+	filelen = htobe64(filelen);
+	nyfe_kmac256_update(&kmac, &filelen, sizeof(filelen));
 
 	/* Finalize integrity protection and write the mac to the file. */
 	nyfe_kmac256_final(&kmac, mac, sizeof(mac));
@@ -185,8 +193,8 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	struct nyfe_xchacha20	cipher;
 	u_int8_t		*block;
 	size_t			toread;
+	u_int64_t		filelen;
 	int			src, dst;
-	u_int64_t		filelen, swapped;
 	u_int8_t		seed[NYFE_SEED_LEN];
 	u_int8_t		mac[NYFE_MAC_LEN], expected[NYFE_MAC_LEN];
 
@@ -220,6 +228,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	/* Validate that the on-disk file seems reasonable. */
 	if (filelen <= sizeof(seed) + sizeof(mac))
 		fatal("%s: doesn't seem like an encrypted file", in);
+	filelen -= sizeof(seed) + sizeof(mac);
 
 	/* Read the seed from the source file. */
 	if (nyfe_file_read(src, seed, sizeof(seed)) != sizeof(seed))
@@ -229,14 +238,6 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	encrypt_setup(key.data, sizeof(key.data), seed, sizeof(seed),
 	    key.id, sizeof(key.id), &cipher, &kmac);
 	nyfe_zeroize(&key, sizeof(key));
-
-	/*
-	 * Add what should be the original file length to the
-	 * integrity protection.
-	 */
-	filelen -= sizeof(seed) + sizeof(mac);
-	swapped = htobe64(filelen);
-	nyfe_kmac256_update(&kmac, &swapped, sizeof(swapped));
 
 	/*
 	 * Read data from the encrypted file, updating the kmac context
@@ -254,6 +255,14 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 
 		filelen -= toread;
 	}
+
+	/*
+	 * Add what should be the original file length to the
+	 * integrity protection.
+	 */
+	filelen = nyfe_file_size(src) - sizeof(seed) - sizeof(mac);
+	filelen = htobe64(filelen);
+	nyfe_kmac256_update(&kmac, &filelen, sizeof(filelen));
 
 	/* No longer needed at this point. */
 	nyfe_zeroize(&cipher, sizeof(cipher));
