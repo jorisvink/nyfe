@@ -107,18 +107,19 @@ nyfe_key_load(struct nyfe_key *key, const char *file)
 	PRECOND(key != NULL);
 	PRECOND(file != NULL);
 
+	/* Open the suspected keyfile, read in the seed and key. */
 	fd = nyfe_file_open(file, NYFE_FILE_READ);
-
 	if (nyfe_file_read(fd, seed, sizeof(seed)) != sizeof(seed))
 		fatal("failed to read seed from %s", file);
-
 	if (nyfe_file_read(fd, key, sizeof(*key)) != sizeof(*key))
 		fatal("failed to read key data from %s", file);
 
+	/* Register any sensitive buffers. */
 	nyfe_zeroize_register(key, sizeof(*key));
 	nyfe_zeroize_register(&kmac, sizeof(kmac));
 	nyfe_zeroize_register(&cipher, sizeof(cipher));
 
+	/* Generate the key material and verify the integrity of the keyfile. */
 	key_generate_secret(&cipher, &kmac, seed, sizeof(seed));
 	nyfe_kmac256_update(&kmac, key->id, sizeof(key->id));
 	nyfe_kmac256_update(&kmac, key->data, sizeof(key->data));
@@ -127,9 +128,11 @@ nyfe_key_load(struct nyfe_key *key, const char *file)
 	if (nyfe_mem_cmp(mac, key->mac, sizeof(mac)) != 0)
 		fatal("integrity check on '%s' failed", file);
 
+	/* Integrity lg2m, decrypt the actual key data. */
 	nyfe_xchacha20_encrypt(&cipher,
 	    key->data, key->data, sizeof(key->data));
 
+	/* Don't call nyfe_zeroize() on key as the caller will use it. */
 	nyfe_zeroize(&kmac, sizeof(kmac));
 	nyfe_zeroize(&cipher, sizeof(cipher));
 
