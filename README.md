@@ -1,5 +1,5 @@
 Nyfe
-====
+----
 
 A software based file encryption tool with some modern primitives
 for confidentiality and integrity protection.
