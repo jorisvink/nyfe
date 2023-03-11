@@ -39,7 +39,7 @@
  *	Ki = Key for integrity (256-bit)
  *	Iv = Iv for confidentiality (192-bit)
  * 	Kc = Key for confidentiality (256-bit)
- *	Len = The original file size (64-bit)
+ *	Len = The original file size (64-bit, big endian)
  *
  *	K = The base symmetrical secret.
  *	X = Rs || Id
