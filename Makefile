@@ -14,9 +14,10 @@ CFLAGS+=-fsanitize=address,undefined
 LDFLAGS+=-fsanitize=address,undefined
 
 SRC=	src/nyfe.c \
-	src/encrypt.c \
+	src/crypto.c \
 	src/file.c \
 	src/keccak1600.c \
+	src/keys.c \
 	src/kmac256.c \
 	src/mem.c \
 	src/sha3.c \

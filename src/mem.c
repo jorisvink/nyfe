@@ -106,3 +106,27 @@ nyfe_mem_zero(void *ptr, size_t len)
 			*(p)++ = 0x00;
 	}
 }
+
+/*
+ * Constant time comparison of 2 given buffers of the same size.
+ * Returns 0 if both contain the same data.
+ */
+int
+nyfe_mem_cmp(const void *b1, const void *b2, size_t len)
+{
+	int			ret;
+	size_t			idx;
+	const u_int8_t		*p1, *p2;
+
+	PRECOND(b1 != NULL);
+	PRECOND(b2 != NULL);
+
+	p1 = b1;
+	p2 = b2;
+	ret = 0;
+
+	for (idx = 0; idx < len; idx++)
+		ret |= p1[idx] ^ p2[idx];
+
+	return (ret);
+}

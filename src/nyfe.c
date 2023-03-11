@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/queue.h>
 
+#include <limits.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -26,11 +27,13 @@
 
 #include "nyfe.h"
 
+static void	cmd_keygen(int, char **);
 static void	cmd_encrypt(int, char **);
 static void	cmd_decrypt(int, char **);
 
 static void	usage(void) __attribute__((noreturn));
-static void	usage_encrypt(void) __attribute__((noreturn));
+static void	usage_keygen(void) __attribute__((noreturn));
+static void	usage_encdec(void) __attribute__((noreturn));
 
 static const struct {
 	const char	*cmd;
@@ -38,6 +41,7 @@ static const struct {
 } cmdtab[] = {
 	{ "encrypt",	cmd_encrypt },
 	{ "decrypt",	cmd_decrypt },
+	{ "keygen",	cmd_keygen },
 	{ NULL, NULL },
 };
 
@@ -104,61 +108,86 @@ usage(void)
 	fprintf(stderr, "commands:\n");
 	fprintf(stderr, "\tencrypt  - Encrypts a file or directory\n");
 	fprintf(stderr, "\tdecrypt  - Decrypts an encrypted file\n");
+	fprintf(stderr, "\tkeygen   - Generate a new key file\n");
 
 	exit(1);
 }
 
 static void
-usage_encrypt(void)
+usage_encdec(void)
 {
-	fprintf(stderr, "Usage: nyfe encrypt [options] [in] [out]\n");
+	fprintf(stderr, "Usage: nyfe encrypt/decrypt [options] [in] [out]\n");
 	fprintf(stderr, "options:\n");
-	fprintf(stderr, "\t-k  - Specifies the symmetrical key ID to use.\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "The in argument is either a file or directory.\n");
-	fprintf(stderr, "The out argument is the file that is created.\n");
+	fprintf(stderr, "\t-f  - Specifies which keyfile to use. (required)\n");
 
 	exit(1);
 }
 
 static void
-cmd_encrypt(int argc, char **argv)
+usage_keygen(void)
+{
+	fprintf(stderr, "Usage: nyfe keygen [file]\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "The file argument is where the key is written too.\n");
+
+	exit(1);
+}
+
+static void
+encrypt_decrypt(int argc, char **argv, int encrypt)
 {
 	int		ch;
-	const char	*keyid;
+	const char	*keyfile;
 
 	PRECOND(argc >= 0);
 	PRECOND(argv != NULL);
+	PRECOND(encrypt == 0 || encrypt == 1);
 
-	keyid = NULL;
+	keyfile = NULL;
 
-	while ((ch = getopt(argc, argv, "k:")) != -1) {
+	while ((ch = getopt(argc, argv, "f:")) != -1) {
 		switch (ch) {
-		case 'k':
-			keyid = optarg;
+		case 'f':
+			keyfile = optarg;
 			break;
 		default:
-			usage_encrypt();
+			usage_encdec();
 		}
 	}
 
 	argc -= optind;
 	argv += optind;
 
-	if (keyid == NULL || argc != 2)
-		usage_encrypt();
+	if (keyfile == NULL || argc != 2)
+		usage_encdec();
 
-	nyfe_encrypt(argv[0], argv[1]);
+	if (encrypt)
+		nyfe_crypto_encrypt(argv[0], argv[1], keyfile);
+	else
+		nyfe_crypto_decrypt(argv[0], argv[1], keyfile);
+}
+
+static void
+cmd_encrypt(int argc, char **argv)
+{
+	encrypt_decrypt(argc, argv, 1);
 }
 
 static void
 cmd_decrypt(int argc, char **argv)
 {
+	encrypt_decrypt(argc, argv, 0);
+}
+
+static void
+cmd_keygen(int argc, char **argv)
+{
 	PRECOND(argc >= 0);
 	PRECOND(argv != NULL);
 
-	if (argc != 3)
-		usage_encrypt();
+	if (argc != 2)
+		usage_keygen();
 
-	nyfe_decrypt(argv[1], argv[2]);
+	printf("generating key into %s\n", argv[1]);
+	nyfe_key_generate(argv[1]);
 }

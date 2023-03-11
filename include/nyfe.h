@@ -54,6 +54,17 @@
 /* KMAC256 defines. */
 #define NYFE_KMAC256_MAC_LEN		32
 
+/* Constants for certain primitives. */
+#define NYFE_KEY_ID_LEN			16
+#define NYFE_MAC_LEN			64
+#define NYFE_SEED_LEN			64
+#define NYFE_KEY_LEN			32
+#define NYFE_INTEGRITY_KEY_LEN		NYFE_KEY_LEN
+#define NYFE_CONFIDENTIALITY_IV_LEN	24
+#define NYFE_CONFIDENTIALITY_KEY_LEN	NYFE_KEY_LEN
+#define NYFE_OKM_LEN			(NYFE_CONFIDENTIALITY_KEY_LEN + \
+    NYFE_CONFIDENTIALITY_IV_LEN + NYFE_INTEGRITY_KEY_LEN)
+
 /*
  * Our xchacha20 context.
  */
@@ -89,12 +100,23 @@ struct nyfe_kmac256 {
 	int				isxof;
 };
 
+/*
+ * A key loaded from a key slot in the keyfile.
+ */
+struct nyfe_key {
+	u_int8_t		id[NYFE_KEY_ID_LEN];
+	u_int8_t		data[NYFE_CONFIDENTIALITY_KEY_LEN];
+	u_int8_t		mac[NYFE_MAC_LEN];
+} __attribute__((packed));
+
 /* src/nyfe.c */
 void	fatal(const char *, ...) __attribute__((noreturn));
 
-/* src/encrypt.c */
-void	nyfe_decrypt(const char *, const char *);
-void	nyfe_encrypt(const char *, const char *);
+/* src/crypto.c */
+void	nyfe_crypto_decrypt(const char *, const char *, const char *);
+void	nyfe_crypto_encrypt(const char *, const char *, const char *);
+void	nyfe_crypto_init(struct nyfe_xchacha20 *, struct nyfe_kmac256 *,
+	    const void *, size_t, const char *);
 
 /* src/file.c */
 u_int64_t	nyfe_file_size(int);
@@ -107,6 +129,7 @@ void	nyfe_zeroize_all(void);
 void	nyfe_zeroize(void *, size_t);
 void	nyfe_mem_zero(void *, size_t);
 void	nyfe_zeroize_register(void *, size_t);
+int	nyfe_mem_cmp(const void *, const void *, size_t);
 
 /* src/xchacha20.c */
 void	nyfe_xchacha20_encrypt(struct nyfe_xchacha20 *, const void *,
@@ -119,6 +142,10 @@ void	nyfe_keccak1600_init(struct nyfe_keccak1600 *, u_int8_t, size_t);
 void	nyfe_keccak1600_squeeze(struct nyfe_keccak1600 *, void *, size_t);
 size_t	nyfe_keccak1600_absorb(struct nyfe_keccak1600 *,
 	    const void *, size_t);
+
+/* src/keys.c */
+void	nyfe_key_generate(const char *);
+void	nyfe_key_load(struct nyfe_key *, const char *);
 
 /* src/sha3.c */
 void	nyfe_sha3_init256(struct nyfe_sha3 *);

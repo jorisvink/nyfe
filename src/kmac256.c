@@ -207,7 +207,8 @@ kmac256_encode_string(const void *in, size_t inlen, u_int8_t *out,
 		bits = bits >> 8;
 	}
 
-	memcpy(&out[1 + count], in, inlen);
+	if (in != NULL)
+		memcpy(&out[1 + count], in, inlen);
 
 	return (total);
 }
