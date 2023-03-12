@@ -57,7 +57,7 @@
 
 #define BLOCK_SIZE		(1024 * 1024 * 4)
 
-static void	encrypt_setup(const void *, size_t, const void *, size_t,
+static void	crypto_setup(const void *, size_t, const void *, size_t,
 		    const void *, size_t, struct nyfe_xchacha20 *,
 		    struct nyfe_kmac256 *);
 
@@ -136,9 +136,11 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	nyfe_file_write(dst, seed, sizeof(seed));
 
 	/* Derive key material and setup cipher and kmac contexts. */
-	encrypt_setup(key.data, sizeof(key.data), seed, sizeof(seed),
+	crypto_setup(key.data, sizeof(key.data), seed, sizeof(seed),
 	    key.id, sizeof(key.id), &cipher, &kmac);
 	nyfe_zeroize(&key, sizeof(key));
+
+	nyfe_output("working ...  ");
 
 	/*
 	 * Read data from the source file and for each read block
@@ -160,6 +162,8 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 
 		nyfe_file_write(dst, block, ret);
 		filelen += ret;
+
+		nyfe_output_spin();
 	}
 
 	/* No longer need block at this point. */
@@ -180,6 +184,8 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 
 	(void)close(src);
 	nyfe_file_close(dst);
+
+	nyfe_output("\bdone\n");
 }
 
 /*
@@ -237,9 +243,11 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 		fatal("failed to read seed from %s", in);
 
 	/* Derive key material and setup cipher and kmac contexts. */
-	encrypt_setup(key.data, sizeof(key.data), seed, sizeof(seed),
+	crypto_setup(key.data, sizeof(key.data), seed, sizeof(seed),
 	    key.id, sizeof(key.id), &cipher, &kmac);
 	nyfe_zeroize(&key, sizeof(key));
+
+	nyfe_output("working ...  ");
 
 	/*
 	 * Read data from the encrypted input, updating the kmac context
@@ -272,11 +280,14 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 		ret -= sizeof(mac);
 		memcpy(mac, &block[ret], sizeof(mac));
 
-		nyfe_kmac256_update(&kmac, block, ret);
-		nyfe_xchacha20_encrypt(&cipher, block, block, ret);
-		nyfe_file_write(dst, block, ret);
+		if (ret > 0) {
+			nyfe_kmac256_update(&kmac, block, ret);
+			nyfe_xchacha20_encrypt(&cipher, block, block, ret);
+			nyfe_file_write(dst, block, ret);
+			filelen += ret;
+		}
 
-		filelen += ret;
+		nyfe_output_spin();
 	}
 
 	/* We must have a read a mac. */
@@ -312,6 +323,8 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 
 	(void)close(src);
 	nyfe_file_close(dst);
+
+	nyfe_output("\bdone\n");
 }
 
 /*
@@ -321,7 +334,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
  * Adds the seed and keyID to the kmac context when ready.
  */
 static void
-encrypt_setup(const void *key, size_t key_len, const void *seed,
+crypto_setup(const void *key, size_t key_len, const void *seed,
     size_t seed_len, const void *id, size_t id_len,
     struct nyfe_xchacha20 *cipher, struct nyfe_kmac256 *kmac)
 {
@@ -340,6 +353,8 @@ encrypt_setup(const void *key, size_t key_len, const void *seed,
 	nyfe_zeroize_register(okm, sizeof(okm));
 	nyfe_zeroize_register(&kdf, sizeof(kdf));
 
+	nyfe_output("deriving unique keys for this file ... ");
+
 	/* KDF as detailed at the top of this file. */
 	nyfe_kmac256_init(&kdf, key, key_len,
 	    DERIVE_LABEL, sizeof(DERIVE_LABEL) - 1);
@@ -357,4 +372,6 @@ encrypt_setup(const void *key, size_t key_len, const void *seed,
 	/* Add the seed and keyID to the integrity protection. */
 	nyfe_kmac256_update(kmac, seed, seed_len);
 	nyfe_kmac256_update(kmac, id, id_len);
+
+	nyfe_output("done\n");
 }

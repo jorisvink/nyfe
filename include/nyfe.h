@@ -118,8 +118,10 @@ struct nyfe_key {
 } __attribute__((packed));
 
 /* src/nyfe.c */
+void	nyfe_output_spin(void);
 int	nyfe_signal_pending(void);
 void	fatal(const char *, ...) __attribute__((noreturn));
+void	nyfe_output(const char *, ...) __attribute__((format (printf, 1, 2)));
 
 /* src/crypto.c */
 void	nyfe_crypto_decrypt(const char *, const char *, const char *);

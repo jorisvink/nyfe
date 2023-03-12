@@ -31,6 +31,7 @@
 #include "nyfe.h"
 
 static void	sighdlr(int);
+static void	cmd_init(int, char **);
 static void	cmd_keygen(int, char **);
 static void	cmd_encrypt(int, char **);
 static void	cmd_decrypt(int, char **);
@@ -42,6 +43,11 @@ static void	usage_encdec(void) __attribute__((noreturn));
 static void	setup_paths(void);
 static void	setup_signals(void);
 
+static const char	*path_default_keyfile(void);
+
+/* Busy spinner */
+static const u_int8_t spinner[] = { '|', '/', '-', '\\', '|', '/', '-', '\\' };
+
 /*
  * A list of supported commands and their callbacks.
  */
@@ -49,6 +55,7 @@ static const struct {
 	const char	*cmd;
 	void		(*cb)(int, char **);
 } cmdtab[] = {
+	{ "init",	cmd_init },
 	{ "encrypt",	cmd_encrypt },
 	{ "decrypt",	cmd_decrypt },
 	{ "keygen",	cmd_keygen },
@@ -57,6 +64,9 @@ static const struct {
 
 /* Last received signal, set via sighdlr(). */
 static volatile sig_atomic_t	sig_recv = -1;
+
+/* If we're showing messages on stdout. */
+static int			nyfe_quiet = 0;
 
 /* The default $HOME/.nyfe path. */
 static char			homedir[PATH_MAX];
@@ -113,6 +123,37 @@ int
 nyfe_signal_pending(void)
 {
 	return (sig_recv);
+}
+
+/* Log something to stdout unless we're quiet. */
+void
+nyfe_output(const char *fmt, ...)
+{
+	va_list		args;
+
+	PRECOND(fmt != NULL);
+
+	if (nyfe_quiet == 1)
+		return;
+
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
+
+	fflush(stdout);
+}
+
+/* Move spinner to next state. */
+void
+nyfe_output_spin(void)
+{
+	static int	state = 0;
+
+	if (nyfe_quiet == 0) {
+		printf("\b%c", spinner[state++]);
+		fflush(stdout);
+		state = state % 7;
+	}
 }
 
 /*
@@ -204,6 +245,7 @@ usage(void)
 	fprintf(stderr, "\tencrypt  - Encrypts a file\n");
 	fprintf(stderr, "\tdecrypt  - Decrypts a file\n");
 	fprintf(stderr, "\tkeygen   - Generate a new key file\n");
+	fprintf(stderr, "\tinit     - Set up nyfe for the first time.\n");
 
 	exit(1);
 }
@@ -215,6 +257,7 @@ usage_encdec(void)
 	fprintf(stderr, "Usage: nyfe encrypt/decrypt [options] [in] [out]\n");
 	fprintf(stderr, "options:\n");
 	fprintf(stderr, "\t-f  - Specifies which keyfile to use.\n");
+	fprintf(stderr, "\t-q  - Be quiet.\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "If -f was not specified nyfe will use ");
 	fprintf(stderr, "$HOME/.nyfe/secret.key\n");
@@ -233,6 +276,50 @@ usage_keygen(void)
 	exit(1);
 }
 
+static void
+usage_init(void)
+{
+	fprintf(stderr, "Usage: nyfe init\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Creates a default keyfile if it does not exist yet.");
+
+	exit(1);
+}
+
+static const char *
+path_default_keyfile(void)
+{
+	int		len;
+	static char	path[PATH_MAX];
+
+	len = snprintf(path, sizeof(path), "%s/secret.key", homedir);
+	if (len == -1 || (size_t)len >= sizeof(path))
+		fatal("failed to construct path to default keyfile");
+
+	return (path);
+}
+
+/*
+ * Initializes nyfe by making sure the default keyfile exists.
+ * If it does not exist it will generate it.
+ */
+static void
+cmd_init(int argc, char **argv)
+{
+	const char	*keyfile;
+
+	PRECOND(argc >= 0);
+	PRECOND(argv != NULL);
+
+	if (argc != 1)
+		usage_init();
+
+	keyfile = path_default_keyfile();
+	nyfe_key_generate(keyfile);
+
+	printf("nyfe initialized!\n");
+}
+
 /*
  * Callback for both encryption and decryption.
  * Will check the arguments specified and call the correct function.
@@ -240,9 +327,8 @@ usage_keygen(void)
 static void
 encrypt_decrypt(int argc, char **argv, int encrypt)
 {
-	int			ch, len;
-	const char		*keyfile;
-	char			path[PATH_MAX];
+	int		ch;
+	const char	*keyfile;
 
 	PRECOND(argc >= 0);
 	PRECOND(argv != NULL);
@@ -250,10 +336,13 @@ encrypt_decrypt(int argc, char **argv, int encrypt)
 
 	keyfile = NULL;
 
-	while ((ch = getopt(argc, argv, "f:")) != -1) {
+	while ((ch = getopt(argc, argv, "f:q")) != -1) {
 		switch (ch) {
 		case 'f':
 			keyfile = optarg;
+			break;
+		case 'q':
+			nyfe_quiet = 1;
 			break;
 		default:
 			usage_encdec();
@@ -263,17 +352,11 @@ encrypt_decrypt(int argc, char **argv, int encrypt)
 	argc -= optind;
 	argv += optind;
 
-	if (keyfile == NULL) {
-		len = snprintf(path, sizeof(path), "%s/secret.key", homedir);
-		if (len == -1 || (size_t)len >= sizeof(path))
-			fatal("failed to construct path to default keyfile");
-		keyfile = path;
-	}
+	if (keyfile == NULL)
+		keyfile = path_default_keyfile();
 
 	if (argc != 2)
 		usage_encdec();
-
-	printf("using keyfile '%s'\n", keyfile);
 
 	if (encrypt)
 		nyfe_crypto_encrypt(argv[0], argv[1], keyfile);

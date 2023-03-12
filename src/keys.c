@@ -114,6 +114,8 @@ nyfe_key_load(struct nyfe_key *key, const char *file)
 	PRECOND(key != NULL);
 	PRECOND(file != NULL);
 
+	nyfe_output("unlocking keyfile '%s'\n", file);
+
 	/* Open the suspected keyfile, read in the seed and key. */
 	fd = nyfe_file_open(file, NYFE_FILE_READ);
 	if (nyfe_file_read(fd, seed, sizeof(seed)) != sizeof(seed))
@@ -160,6 +162,8 @@ nyfe_key_generate(const char *file)
 	u_int8_t			seed[NYFE_SEED_LEN];
 
 	PRECOND(file != NULL);
+
+	nyfe_output("creating keyfile '%s'\n", file);
 
 	/* Open destination keyfile early so we can exit early. */
 	fd = nyfe_file_open(file, NYFE_FILE_CREATE);
@@ -228,8 +232,7 @@ key_generate_secret(struct nyfe_xchacha20 *cipher, struct nyfe_kmac256 *kmac,
 	    RPP_ECHO_OFF | RPP_REQUIRE_TTY) == NULL)
 		fatal("failed to read passphrase");
 
-	printf("deriving key material ... ");
-	fflush(stdout);
+	nyfe_output("deriving keys to verify and unlock keyfile ... |");
 
 	salt_kdf = &seed[0];
 	salt_prf = &seed[KEY_FILE_SALT_LEN];
@@ -238,7 +241,7 @@ key_generate_secret(struct nyfe_xchacha20 *cipher, struct nyfe_kmac256 *kmac,
 	    salt_kdf, KEY_FILE_SALT_LEN, key, sizeof(key));
 	nyfe_zeroize(passphrase, sizeof(passphrase));
 
-	printf("done\n");
+	nyfe_output("\bdone\n");
 
 	nyfe_kmac256_init(&kdf, key, sizeof(key),
 	    KDF_DERIVE_LABEL, sizeof(KDF_DERIVE_LABEL) - 1);
@@ -351,6 +354,8 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 
 		for (idx = 0; idx < PASSPHRASE_KDF_STEP_LEN; idx++)
 			tmp[offset] ^= buf[idx];
+
+		nyfe_output_spin();
 	}
 
 	/* No longer need any of these intermediates. */
