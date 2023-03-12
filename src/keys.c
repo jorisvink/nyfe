@@ -65,6 +65,9 @@
  *
  *	for iter = 0, iter < PASSPHRASE_KDF_ITERATIONS; do
  *		offset = ap[iter] * PASSPHRASE_KDF_STEP_LEN
+ *		if iter % 256 == 0; do
+ *			XChaCha20(Kt, Iv,
+ *			    tmp[offset..PASSPHRASE_KDF_MEM_SIZE - offset]
  *		tmp[offset..offset+256] ^= SHAKE256(tmp[0..256])
  *
  *	X = tmp[32..PASSPHRASE_KDF_MEM_SIZE]
@@ -317,7 +320,6 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 
 	nyfe_xchacha20_setup(&stream, &buf[0], 32, &buf[32], 24);
 	nyfe_xchacha20_encrypt(&stream, tmp, tmp, PASSPHRASE_KDF_MEM_SIZE);
-	nyfe_zeroize(&stream, sizeof(stream));
 
 	/* Using nyfe_mem_zero() here since buf is still used later. */
 	nyfe_mem_zero(buf, sizeof(buf));
@@ -325,14 +327,27 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 	/*
 	 * For each iteration:
 	 *	- Grab the access location from ap.
-	 *	- buf <- SHAKE256(iteration || ap || tmp[ap])
-	 *	- tmp[ap] ^= buf
+	 *	- offset = ap * PASSPHRASE_KDF_STEP_LEN
+	 *	- iter % 256 == 0:
+	 *		tmp[offset] <- XChaCha20(tmp[offset])
+	 *	- buf <- SHAKE256(iteration || tmp[offset)
+	 *	- tmp[offset] ^= buf
 	 */
 	for (iter = 0; iter < PASSPHRASE_KDF_ITERATIONS; iter++) {
 		if ((sig = nyfe_signal_pending()) != -1)
 			fatal("clean abort due to received signal %d", sig);
 
 		offset = ap[iter] * PASSPHRASE_KDF_STEP_LEN;
+
+		/*
+		 * Every 256st iteration run part of the intermediate data
+		 * through the XChaCha20 cipher.
+		 */
+		if ((iter % 256) == 0) {
+			nyfe_xchacha20_encrypt(&stream,
+			    &tmp[offset], &tmp[offset],
+			    PASSPHRASE_KDF_MEM_SIZE - offset);
+		}
 
 		nyfe_xof_shake256_init(&shake);
 		nyfe_sha3_update(&shake, &iter, sizeof(iter));
@@ -346,6 +361,7 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 	/* No longer need any of these intermediates. */
 	nyfe_zeroize(buf, sizeof(buf));
 	nyfe_zeroize(&shake, sizeof(shake));
+	nyfe_zeroize(&stream, sizeof(stream));
 
 	/*
 	 * Use KMAC256() to derive the requested okm.

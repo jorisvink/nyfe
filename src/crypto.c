@@ -71,6 +71,7 @@ void
 nyfe_crypto_init(struct nyfe_xchacha20 *cipher, struct nyfe_kmac256 *kmac,
     const void *okm, size_t okm_len, const char *domain)
 {
+	size_t			idx;
 	const u_int8_t		*kc, *ki, *iv, *key;
 
 	PRECOND(cipher != NULL);
