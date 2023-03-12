@@ -24,6 +24,8 @@ tool for personal use.
 It is also very minimal and lightweight as it has no external
 dependencies (other than libbsd-dev on Linux).
 
+The lack of meta-data in encrypted files is by design.
+
 Building
 --------
 
