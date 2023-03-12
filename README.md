@@ -7,15 +7,16 @@ for confidentiality and integrity protection.
 Cryptography
 ------------
 
-Nyfe provides confidentiality and integrity protection on your encrypted
+Nyfe provides confidentiality and integrity protection on its encrypted
 data using XChaCha20 and KMAC256 respectively.
 
 It does this with keys derived from strong 256-bit symmetrical secrets
 that are stored in keyfiles.
 
-Separate keys for confidentiality and integrity are derived from the
-base symmetrical secret for each new file that is encrypted by using
-KMAC256 as a PRF with separate customization labels for each.
+Separate keys, nonce and seeds for confidentiality and integrity
+protection are derived from the base symmetrical secret for each new file
+that is encrypted, using KMAC256 as a PRF with separate customization labels
+for each.
 
 This project aims at producing a readable and trusted file encryption
 tool for personal use.
