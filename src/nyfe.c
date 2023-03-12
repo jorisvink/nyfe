@@ -85,12 +85,16 @@ main(int argc, char *argv[])
 
 	nyfe_selftest_kmac256();
 	nyfe_selftest_xchacha20();
-	nyfe_random_init();
-	setup_signals();
 
+	nyfe_file_init();
+	nyfe_random_init();
+	nyfe_zeroize_init();
+
+	setup_signals();
 	cb(argc, argv);
 
 	nyfe_zeroize_all();
+	nyfe_file_remove_lingering();
 
 	return (0);
 }
@@ -121,6 +125,7 @@ fatal(const char *fmt, ...)
 	(void)sigprocmask(SIG_BLOCK, &sig, NULL);
 
 	nyfe_zeroize_all();
+	nyfe_file_remove_lingering();
 
 	va_start(args, fmt);
 	vfprintf(stderr, fmt, args);

@@ -179,9 +179,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	nyfe_mem_zero(&kmac, sizeof(kmac));
 
 	(void)close(src);
-
-	if (close(dst) == -1)
-		fatal("close failed on '%s': %s", out, errno_s);
+	nyfe_file_close(dst);
 }
 
 /*
@@ -313,9 +311,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	}
 
 	(void)close(src);
-
-	if (close(dst) == -1)
-		fatal("close failed on '%s': %s", out, errno_s);
+	nyfe_file_close(dst);
 }
 
 /*

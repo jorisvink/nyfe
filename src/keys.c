@@ -195,13 +195,7 @@ nyfe_key_generate(const char *file)
 	nyfe_mem_zero(&kmac, sizeof(kmac));
 	nyfe_mem_zero(&cipher, sizeof(cipher));
 
-	if (close(fd) == -1) {
-		if (unlink(file) == -1) {
-			printf("WARNING: failed to remove '%s', do not use\n",
-			    file);
-		}
-		fatal("close failed on '%s': %s", file, errno_s);
-	}
+	nyfe_file_close(fd);
 }
 
 /*

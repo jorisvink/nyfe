@@ -16,17 +16,68 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/queue.h>
 
 #include <fcntl.h>
 #include <unistd.h>
 
 #include "nyfe.h"
 
+struct file {
+	int			fd;
+	char			*path;
+	LIST_ENTRY(file)	list;
+};
+
+static LIST_HEAD(, file)	files;
+
+/* Initialize the file list. */
+void
+nyfe_file_init(void)
+{
+	LIST_INIT(&files);
+}
+
+/*
+ * Remove all lingering files from the files list.
+ */
+void
+nyfe_file_remove_lingering(void)
+{
+	struct file		*file;
+
+	while ((file = LIST_FIRST(&files)) != NULL) {
+		LIST_REMOVE(file, list);
+
+		if (unlink(file->path) == -1) {
+			printf("WARNING: failed to remove '%s', do not use\n",
+			    file->path);
+		}
+
+		free(file->path);
+		free(file);
+	}
+}
+
+/*
+ * Open the file at the given path, the mode depends on the `which`
+ * parameter which is either NYFE_FILE_READ or NYFE_FILE_CREATE.
+ *
+ * If NYFE_FILE_CREATE is given, the file must not exist and will be
+ * created with mode 0500.
+ *
+ * For NYFE_FILE_READ it is made sure the file is a regular file, not
+ * a symbolic link or anything else.
+ *
+ * For NYFE_FILE_CREATE, the file is added to a list of files that may
+ * be removed in case of a fatal() error.
+ */
 int
 nyfe_file_open(const char *path, int which)
 {
-	int		fd;
-	struct stat	st;
+	int			fd;
+	struct stat		st;
+	struct file		*file;
 
 	PRECOND(path != NULL);
 	PRECOND(which == NYFE_FILE_READ || which == NYFE_FILE_CREATE);
@@ -44,13 +95,57 @@ nyfe_file_open(const char *path, int which)
 		if (stat(path, &st) != -1)
 			fatal("%s: already exists", path);
 
+		if ((file = calloc(1, sizeof(*file))) == NULL)
+			fatal("failed to allocate file structure");
+
+		if ((file->path = strdup(path)) == NULL)
+			fatal("failed to copy file path");
+
+		LIST_INSERT_HEAD(&files, file, list);
+
 		if ((fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, 0500)) == -1)
 			fatal("failed to open '%s': %s", path, errno_s);
+
+		file->fd = fd;
 	}
 
 	return (fd);
 }
 
+/*
+ * Close a file descriptor that was used for writing. In the close()
+ * system call failed we remove the file from disk as it is inconsistent.
+ */
+void
+nyfe_file_close(int fd)
+{
+	struct file		*file;
+
+	PRECOND(fd >= 0);
+
+	LIST_FOREACH(file, &files, list) {
+		if (file->fd == fd)
+			break;
+	}
+
+	if (file == NULL)
+		fatal("failed to find file matching fd '%d'", fd);
+
+	LIST_REMOVE(file, list);
+
+	if (close(fd) == -1) {
+		if (unlink(file->path) == -1) {
+			printf("WARNING: failed to remove '%s', do not use\n",
+			    file->path);
+		}
+		fatal("close failed on '%s': %s", file->path, errno_s);
+	}
+
+	free(file->path);
+	free(file);
+}
+
+/* Returns the file size of the file pointed to by the given file descriptor. */
 u_int64_t
 nyfe_file_size(int fd)
 {
@@ -64,6 +159,9 @@ nyfe_file_size(int fd)
 	return ((u_int64_t)st.st_size);
 }
 
+/*
+ * Atomically write all wanted data into the file descriptor.
+ */
 void
 nyfe_file_write(int fd, const void *buf, size_t len)
 {
@@ -88,6 +186,9 @@ nyfe_file_write(int fd, const void *buf, size_t len)
 	}
 }
 
+/*
+ * Atomically read the number of requested bytes from the file descriptor.
+ */
 size_t
 nyfe_file_read(int fd, void *buf, size_t len)
 {

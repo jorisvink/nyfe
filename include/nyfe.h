@@ -129,12 +129,16 @@ void	nyfe_crypto_init(struct nyfe_xchacha20 *, struct nyfe_kmac256 *,
 
 /* src/file.c */
 u_int64_t	nyfe_file_size(int);
+void		nyfe_file_init(void);
+void		nyfe_file_close(int);
+void		nyfe_file_remove_lingering(void);
 int		nyfe_file_open(const char *, int);
 size_t		nyfe_file_read(int, void *, size_t);
 void		nyfe_file_write(int, const void *, size_t);
 
 /* src/mem.c */
 void	nyfe_zeroize_all(void);
+void	nyfe_zeroize_init(void);
 void	nyfe_zeroize(void *, size_t);
 void	nyfe_mem_zero(void *, size_t);
 void	nyfe_zeroize_register(void *, size_t);

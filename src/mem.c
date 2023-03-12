@@ -33,6 +33,13 @@ struct zeroize {
 
 static LIST_HEAD(, zeroize)		zeroize_list;
 
+/* Initialize the zeroize list. */
+void
+nyfe_zeroize_init(void)
+{
+	LIST_INIT(&zeroize_list);
+}
+
 /*
  * Register sensitive data and its length so that it can be cleared
  * in case of a fatal().
