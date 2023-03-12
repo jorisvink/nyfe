@@ -14,10 +14,13 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <sys/param.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/queue.h>
 
 #include <limits.h>
+#include <pwd.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -36,6 +39,7 @@ static void	usage(void) __attribute__((noreturn));
 static void	usage_keygen(void) __attribute__((noreturn));
 static void	usage_encdec(void) __attribute__((noreturn));
 
+static void	setup_paths(void);
 static void	setup_signals(void);
 
 /*
@@ -53,6 +57,9 @@ static const struct {
 
 /* Last received signal, set via sighdlr(). */
 static volatile sig_atomic_t	sig_recv = -1;
+
+/* The default $HOME/.nyfe path. */
+static char			homedir[PATH_MAX];
 
 /*
  * Nyfe entry point, will check what commands were specified on the command
@@ -90,7 +97,9 @@ main(int argc, char *argv[])
 	nyfe_random_init();
 	nyfe_zeroize_init();
 
+	setup_paths();
 	setup_signals();
+
 	cb(argc, argv);
 
 	nyfe_zeroize_all();
@@ -165,6 +174,27 @@ setup_signals(void)
 		fatal("sigaction: %s", errno_s);
 }
 
+/*
+ * Resolve the user $HOME and fixup the default path to ~/.nyfe.
+ * Will always mkdir() on this directory.
+ */
+static void
+setup_paths(void)
+{
+	int			len;
+	struct passwd		*pw;
+
+	if ((pw = getpwuid(getuid())) == NULL)
+		fatal("who are you? (%s)", errno_s);
+
+	len = snprintf(homedir, sizeof(homedir), "%s/.nyfe", pw->pw_dir);
+	if (len == -1 || (size_t)len >= sizeof(homedir))
+		fatal("failed to construct path to homedir");
+
+	if (mkdir(homedir, 0700) == -1 && errno != EEXIST)
+		fatal("failed to create '%s': %s", homedir, errno_s);
+}
+
 /* Nyfe usage callback. */
 static void
 usage(void)
@@ -184,7 +214,10 @@ usage_encdec(void)
 {
 	fprintf(stderr, "Usage: nyfe encrypt/decrypt [options] [in] [out]\n");
 	fprintf(stderr, "options:\n");
-	fprintf(stderr, "\t-f  - Specifies which keyfile to use. (required)\n");
+	fprintf(stderr, "\t-f  - Specifies which keyfile to use.\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "If -f was not specified nyfe will use ");
+	fprintf(stderr, "$HOME/.nyfe/secret.key\n");
 
 	exit(1);
 }
@@ -207,8 +240,9 @@ usage_keygen(void)
 static void
 encrypt_decrypt(int argc, char **argv, int encrypt)
 {
-	int		ch;
-	const char	*keyfile;
+	int			ch, len;
+	const char		*keyfile;
+	char			path[PATH_MAX];
 
 	PRECOND(argc >= 0);
 	PRECOND(argv != NULL);
@@ -229,8 +263,17 @@ encrypt_decrypt(int argc, char **argv, int encrypt)
 	argc -= optind;
 	argv += optind;
 
-	if (keyfile == NULL || argc != 2)
+	if (keyfile == NULL) {
+		len = snprintf(path, sizeof(path), "%s/secret.key", homedir);
+		if (len == -1 || (size_t)len >= sizeof(path))
+			fatal("failed to construct path to default keyfile");
+		keyfile = path;
+	}
+
+	if (argc != 2)
 		usage_encdec();
+
+	printf("using keyfile '%s'\n", keyfile);
 
 	if (encrypt)
 		nyfe_crypto_encrypt(argv[0], argv[1], keyfile);

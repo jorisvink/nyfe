@@ -161,6 +161,9 @@ nyfe_key_generate(const char *file)
 
 	PRECOND(file != NULL);
 
+	/* Open destination keyfile early so we can exit early. */
+	fd = nyfe_file_open(file, NYFE_FILE_CREATE);
+
 	/*
 	 * Generate the key ID and the key data, do a nyfe_random_init()
 	 * in between so both outputs are not related to each other since
@@ -183,9 +186,7 @@ nyfe_key_generate(const char *file)
 	nyfe_kmac256_update(&kmac, key.data, sizeof(key.data));
 	nyfe_kmac256_final(&kmac, mac, sizeof(mac));
 
-	/* Open the file and write all contents. */
-	fd = nyfe_file_open(file, NYFE_FILE_CREATE);
-
+	/* Write all contents to the new keyfile. */
 	nyfe_file_write(fd, seed, sizeof(seed));
 	nyfe_file_write(fd, key.id, sizeof(key.id));
 	nyfe_file_write(fd, key.data, sizeof(key.data));
