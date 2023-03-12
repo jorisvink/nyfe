@@ -33,8 +33,7 @@ static void		le32tobytes(const u_int32_t, u_int8_t *);
 
 static void	xchacha20_rounds(struct nyfe_xchacha20 *,
 		    struct nyfe_xchacha20 *);
-static void	xchacha20_generate(struct nyfe_xchacha20 *,
-		    u_int8_t *, size_t);
+static void	xchacha20_generate(struct nyfe_xchacha20 *);
 
 static const u_int8_t sigma[16] = {
 	0x65, 0x78, 0x70, 0x61, 0x6e, 0x64, 0x20, 0x33,
@@ -107,6 +106,9 @@ nyfe_xchacha20_setup(struct nyfe_xchacha20 *ctx, const u_int8_t *key,
 	ctx->input[14] = bytestole32(&iv[16]);
 	ctx->input[15] = bytestole32(&iv[20]);
 
+	/* Forces new block generation on first invocation. */
+	ctx->offset = sizeof(ctx->block);
+
 	nyfe_mem_zero(&subctx, sizeof(subctx));
 }
 
@@ -117,7 +119,6 @@ nyfe_xchacha20_encrypt(struct nyfe_xchacha20 *ctx, const void *in,
 	u_int8_t		*ct;
 	const u_int8_t		*pt;
 	size_t			idx;
-	u_int8_t		block[64];
 
 	PRECOND(ctx != NULL);
 	PRECOND(in != NULL);
@@ -128,39 +129,36 @@ nyfe_xchacha20_encrypt(struct nyfe_xchacha20 *ctx, const void *in,
 	ct = out;
 
 	for (;;) {
-		xchacha20_generate(ctx, block, sizeof(block));
-
-		ctx->input[12] += 1;
-		if (ctx->input[12] == 0)
-			ctx->input[13] += 1;
-
 		if (len <= 64) {
-			for (idx = 0; idx < len; idx++)
-				ct[idx] = pt[idx] ^ block[idx];
+			for (idx = 0; idx < len; idx++) {
+				if (ctx->offset == sizeof(ctx->block))
+					xchacha20_generate(ctx);
+				ct[idx] = pt[idx] ^ ctx->block[ctx->offset++];
+			}
 			break;
 		}
 
-		for (idx = 0; idx < sizeof(block); idx++)
-			ct[idx] = pt[idx] ^ block[idx];
+		for (idx = 0; idx < sizeof(ctx->block); idx++) {
+			if (ctx->offset == sizeof(ctx->block))
+				xchacha20_generate(ctx);
+			ct[idx] = pt[idx] ^ ctx->block[ctx->offset++];
+		}
 
-		len -= sizeof(block);
-		ct += sizeof(block);
-		pt += sizeof(block);
+		len -= sizeof(ctx->block);
+		ct += sizeof(ctx->block);
+		pt += sizeof(ctx->block);
 	}
-
-	nyfe_mem_zero(block, sizeof(block));
 }
 
 static void
-xchacha20_generate(struct nyfe_xchacha20 *ctx, u_int8_t *output, size_t len)
+xchacha20_generate(struct nyfe_xchacha20 *ctx)
 {
 	int				i;
 	struct nyfe_xchacha20		subctx;
 	u_int32_t			tmp[16];
 
 	PRECOND(ctx != NULL);
-	PRECOND(output != NULL);
-	PRECOND(len == 64);
+	PRECOND(ctx->offset == sizeof(ctx->block));
 
 	for (i = 0; i < 16; i++)
 		tmp[i] = ctx->input[i];
@@ -171,10 +169,16 @@ xchacha20_generate(struct nyfe_xchacha20 *ctx, u_int8_t *output, size_t len)
 		subctx.input[i] += ctx->input[i];
 
 	for (i = 0; i < 16; i++)
-		le32tobytes(subctx.input[i], &output[i * 4]);
+		le32tobytes(subctx.input[i], &ctx->block[i * 4]);
 
 	nyfe_mem_zero(tmp, sizeof(tmp));
 	nyfe_mem_zero(&subctx, sizeof(subctx));
+
+	ctx->input[12] += 1;
+	if (ctx->input[12] == 0)
+		ctx->input[13] += 1;
+
+	ctx->offset = 0;
 }
 
 static void

@@ -76,6 +76,8 @@
  */
 struct nyfe_xchacha20 {
 	u_int32_t	input[16];
+	u_int8_t	block[64];
+	size_t		offset;
 };
 
 /*
