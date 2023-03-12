@@ -192,19 +192,22 @@ void
 nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 {
 	u_int32_t		ret;
+	int			sig;
 	struct nyfe_key		key;
 	struct nyfe_kmac256	kmac;
 	struct nyfe_xchacha20	cipher;
 	u_int8_t		*block;
-	size_t			toread;
 	u_int64_t		filelen;
-	int			src, dst;
+	int			src, dst, pending;
 	u_int8_t		seed[NYFE_SEED_LEN];
 	u_int8_t		mac[NYFE_MAC_LEN], expected[NYFE_MAC_LEN];
 
 	PRECOND(in != NULL);
 	PRECOND(out != NULL);
 	PRECOND(keyfile != NULL);
+
+	/* Open the destination early, so we exit early if we can't do it. */
+	dst = nyfe_file_open(out, NYFE_FILE_CREATE);
 
 	/*
 	 * Verify and decrypt the selected keyfile.
@@ -216,6 +219,13 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	if ((block = calloc(1, BLOCK_SIZE)) == NULL)
 		fatal("failed to allocate decryption buffer");
 
+	/* If stdin was requested, just set src to STDIN_FILENO. */
+	if (!strcmp(in, "-")) {
+		src = STDIN_FILENO;
+	} else {
+		src = nyfe_file_open(in, NYFE_FILE_READ);
+	}
+
 	/*
 	 * Register memory that will contain sensitive information.
 	 * If something goes wrong and we fatal() these are explicitly
@@ -223,16 +233,6 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	 */
 	nyfe_zeroize_register(&kmac, sizeof(kmac));
 	nyfe_zeroize_register(&cipher, sizeof(cipher));
-
-	/* Open and create the required file on disk. */
-	src = nyfe_file_open(in, NYFE_FILE_READ);
-	dst = nyfe_file_open(out, NYFE_FILE_CREATE);
-	filelen = nyfe_file_size(src);
-
-	/* Validate that the on-disk file seems reasonable. */
-	if (filelen <= sizeof(seed) + sizeof(mac))
-		fatal("%s: doesn't seem like an encrypted file", in);
-	filelen -= sizeof(seed) + sizeof(mac);
 
 	/* Read the seed from the source file. */
 	if (nyfe_file_read(src, seed, sizeof(seed)) != sizeof(seed))
@@ -244,27 +244,51 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	nyfe_zeroize(&key, sizeof(key));
 
 	/*
-	 * Read data from the encrypted file, updating the kmac context
+	 * Read data from the encrypted input, updating the kmac context
 	 * and decrypting it as we go.
 	 */
-	while (filelen) {
-		toread = MIN(filelen, BLOCK_SIZE);
+	pending = 0;
+	filelen = 0;
+	for (;;) {
+		if ((sig = nyfe_signal_pending()) != -1) {
+			(void)unlink(out);
+			fatal("clean abort due to received signal %d", sig);
+		}
 
-		if ((ret = nyfe_file_read(src, block, toread)) != toread)
-			fatal("read %zu/%zu bytes", ret, toread);
+		ret = nyfe_file_read(src, block, BLOCK_SIZE);
+		if (ret == 0)
+			break;
 
-		nyfe_kmac256_update(&kmac, block, toread);
-		nyfe_xchacha20_encrypt(&cipher, block, block, toread);
-		nyfe_file_write(dst, block, toread);
+		if (pending) {
+			nyfe_kmac256_update(&kmac, mac, sizeof(mac));
+			nyfe_xchacha20_encrypt(&cipher, mac, mac, sizeof(mac));
+			nyfe_file_write(dst, mac, sizeof(mac));
+			pending = 0;
+			filelen += sizeof(mac);
+		}
 
-		filelen -= toread;
+		if (ret < sizeof(mac))
+			fatal("%s: too short of a read", __func__);
+
+		pending = 1;
+		ret -= sizeof(mac);
+		memcpy(mac, &block[ret], sizeof(mac));
+
+		nyfe_kmac256_update(&kmac, block, ret);
+		nyfe_xchacha20_encrypt(&cipher, block, block, ret);
+		nyfe_file_write(dst, block, ret);
+
+		filelen += ret;
 	}
+
+	/* We must have a read a mac. */
+	if (pending != 1)
+		fatal("%s: no pending integrity data", __func__);
 
 	/*
 	 * Add what should be the original file length to the
 	 * integrity protection.
 	 */
-	filelen = nyfe_file_size(src) - sizeof(seed) - sizeof(mac);
 	filelen = htobe64(filelen);
 	nyfe_kmac256_update(&kmac, &filelen, sizeof(filelen));
 
@@ -272,10 +296,6 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	nyfe_zeroize(&cipher, sizeof(cipher));
 	nyfe_mem_zero(block, BLOCK_SIZE);
 	free(block);
-
-	/* Read mac from the file. */
-	if (nyfe_file_read(src, mac, sizeof(mac)) != sizeof(mac))
-		fatal("failed to read mac from %s", in);
 
 	/*
 	 * Finalize the integrity protection and compare the
