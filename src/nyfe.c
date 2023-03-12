@@ -171,8 +171,8 @@ usage(void)
 {
 	fprintf(stderr, "Usage: nyfe [cmd] [cmdopts]\n");
 	fprintf(stderr, "commands:\n");
-	fprintf(stderr, "\tencrypt  - Encrypts a file or directory\n");
-	fprintf(stderr, "\tdecrypt  - Decrypts an encrypted file\n");
+	fprintf(stderr, "\tencrypt  - Encrypts a file\n");
+	fprintf(stderr, "\tdecrypt  - Decrypts a file\n");
 	fprintf(stderr, "\tkeygen   - Generate a new key file\n");
 
 	exit(1);
