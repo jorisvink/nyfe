@@ -38,6 +38,9 @@ static void	usage_encdec(void) __attribute__((noreturn));
 
 static void	setup_signals(void);
 
+/*
+ * A list of supported commands and their callbacks.
+ */
 static const struct {
 	const char	*cmd;
 	void		(*cb)(int, char **);
@@ -48,8 +51,14 @@ static const struct {
 	{ NULL, NULL },
 };
 
+/* Last received signal, set via sighdlr(). *(
 static volatile sig_atomic_t	sig_recv = -1;
 
+/*
+ * Nyfe entry point, will check what commands were specified on the command
+ * line, run some self tests, setup the random system, signals and finally
+ * calls into the correct callback.
+ */
 int
 main(int argc, char *argv[])
 {
@@ -86,12 +95,20 @@ main(int argc, char *argv[])
 	return (0);
 }
 
+/* Returns the last received signal. */
 int
 nyfe_signal_pending(void)
 {
 	return (sig_recv);
 }
 
+/*
+ * A fatal error occurred, we will need to clean up.
+ *
+ * Before we do, block *all* signals that are blockable so we do
+ * not get interrupted in our cleanup as we need to wipe sensitive
+ * information from memory.
+ */
 void
 fatal(const char *fmt, ...)
 {
@@ -114,12 +131,14 @@ fatal(const char *fmt, ...)
 	exit(1);
 }
 
+/* Signal handler callback, install belowed via sigaction(). */
 static void
 sighdlr(int sig)
 {
 	sig_recv = sig;
 }
 
+/* Setup all relevant signals to call sighldr(). */
 static void
 setup_signals(void)
 {
@@ -141,6 +160,7 @@ setup_signals(void)
 		fatal("sigaction: %s", errno_s);
 }
 
+/* Nyfe usage callback. */
 static void
 usage(void)
 {
@@ -153,6 +173,7 @@ usage(void)
 	exit(1);
 }
 
+/* Nyfe encrypt | decrypt usage callback. */
 static void
 usage_encdec(void)
 {
@@ -163,6 +184,7 @@ usage_encdec(void)
 	exit(1);
 }
 
+/* Nyfe keygen usage callback. */
 static void
 usage_keygen(void)
 {
@@ -173,6 +195,10 @@ usage_keygen(void)
 	exit(1);
 }
 
+/*
+ * Callback for both encryption and decryption.
+ * Will check the arguments specified and call the correct function.
+ */
 static void
 encrypt_decrypt(int argc, char **argv, int encrypt)
 {
@@ -207,6 +233,7 @@ encrypt_decrypt(int argc, char **argv, int encrypt)
 		nyfe_crypto_decrypt(argv[0], argv[1], keyfile);
 }
 
+/* Entry points for the revelant commands. */
 static void
 cmd_encrypt(int argc, char **argv)
 {
