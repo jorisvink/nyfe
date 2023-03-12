@@ -4,6 +4,8 @@ Nyfe
 A software based file encryption tool with some modern primitives
 for confidentiality and integrity protection.
 
+Nyfe is licensed under the ISC license.
+
 Cryptography
 ------------
 
