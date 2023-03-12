@@ -45,35 +45,41 @@ $ make
 Usage
 -----
 
-First, you'll want to generate a keyfile:
+First, you'll want to initialize nyfe and generate the default keyfile:
+
+```
+$ nyfe init
+```
+
+You can generate another keyfiles as needed:
 
 ```
 $ mkdir $HOME/.nyfe
-$ nyfe keygen $HOME/.nyfe/nyfe.key
+$ nyfe keygen $HOME/.nyfe/different.key
 ```
 
-Now you can encrypt some things with that key:
+Now you can encrypt some things with the default key:
 
 ```
-$ nyfe encrypt -f $HOME/.nyfe/nyfe.key myarchive.tar myarchive.nyfe
+$ nyfe encrypt myarchive.tar myarchive.nyfe
 ```
 
 You can pipe straight into nyfe too if thats your thing:
 
 ```
-$ tar zcv myarchive | nyfe encrypt -f $HOME/.nyfe/nyfe.key - myarchive.nyfe
+$ tar zcv myarchive | nyfe encrypt -f $HOME/.nyfe/different.key - myarchive.nyfe
 ```
 
 Decrypting is pretty similar:
 
 ```
-$ nyfe decrypt -f $HOME/.nyfe/nyfe.key myarchive.nyfe myarchive.tar
+$ nyfe decrypt myarchive.nyfe myarchive.tar
 ```
 
 You can also pipe into nyfe for decryption:
 
 ```
-$ cat myarchive.nyfe | nyfe decrypt -f $HOME/.nyfe/nyfe.key - myarchive.tar
+$ cat myarchive.nyfe | nyfe decrypt -f $HOME/.nyfe/different.key - myarchive.tar
 ```
 
 Defaults
