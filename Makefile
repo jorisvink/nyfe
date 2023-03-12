@@ -10,8 +10,10 @@ CFLAGS+=-Wmissing-prototypes -Wmissing-declarations -Wshadow
 CFLAGS+=-Wpointer-arith -Wcast-qual -Wsign-compare -O2
 CFLAGS+=-fstack-protector-all -Wtype-limits -fno-common -Iinclude
 
-CFLAGS+=-fsanitize=address,undefined
-LDFLAGS+=-fsanitize=address,undefined
+ifeq ("$(SANITIZE)", "1")
+	CFLAGS+=-fsanitize=address,undefined
+	LDFLAGS+=-fsanitize=address,undefined
+endif
 
 OSNAME=$(shell uname -s | sed -e 's/[-_].*//g' | tr A-Z a-z)
 ifeq ("$(OSNAME)", "linux")
