@@ -134,7 +134,7 @@ nyfe_file_close(int fd)
 	LIST_REMOVE(file, list);
 
 	if (close(fd) == -1) {
-		if (unlink(file->path) == -1) {
+		if (unlink(file->path) == -1 && errno != ENOENT) {
 			printf("WARNING: failed to remove '%s', do not use\n",
 			    file->path);
 		}
