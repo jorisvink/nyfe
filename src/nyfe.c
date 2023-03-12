@@ -51,7 +51,7 @@ static const struct {
 	{ NULL, NULL },
 };
 
-/* Last received signal, set via sighdlr(). *(
+/* Last received signal, set via sighdlr(). */
 static volatile sig_atomic_t	sig_recv = -1;
 
 /*
