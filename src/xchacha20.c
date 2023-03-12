@@ -20,6 +20,7 @@
 
 #define ROTL32(v, b)	((v << b) | (v >> (32 - b)))
 
+/* The ChaCha20 quarter round. */
 #define QUARTERROUND(a, b, c, d)					\
 	do {								\
 		a = a + b; d = d ^ a; d = ROTL32(d, 16U);		\
@@ -35,11 +36,18 @@ static void	xchacha20_rounds(struct nyfe_xchacha20 *,
 		    struct nyfe_xchacha20 *);
 static void	xchacha20_generate(struct nyfe_xchacha20 *);
 
+/* The sigma constant that is expanded into the initial input block. */
 static const u_int8_t sigma[16] = {
 	0x65, 0x78, 0x70, 0x61, 0x6e, 0x64, 0x20, 0x33,
 	0x32, 0x2d, 0x62, 0x79, 0x74, 0x65, 0x20, 0x6b
 };
 
+/*
+ * Setup a new XChaCha20 context using the given key and iv.
+ *
+ * Since this is XChaCha20, we derive a new subkey first using HChaCHa20
+ * and then finalize the input block after that using the new key.
+ */
 void
 nyfe_xchacha20_setup(struct nyfe_xchacha20 *ctx, const u_int8_t *key,
     size_t key_len, const u_int8_t *iv, size_t iv_len)
@@ -112,6 +120,11 @@ nyfe_xchacha20_setup(struct nyfe_xchacha20 *ctx, const u_int8_t *key,
 	nyfe_mem_zero(&subctx, sizeof(subctx));
 }
 
+/*
+ * Encrypt / Decrypt a given amount of data.
+ * The in and out parameters may be the same buffer.
+ * The input doesn't need to be a multiple of the XChaCha20 block size.
+ */
 void
 nyfe_xchacha20_encrypt(struct nyfe_xchacha20 *ctx, const void *in,
     void *out, size_t len)
@@ -150,6 +163,7 @@ nyfe_xchacha20_encrypt(struct nyfe_xchacha20 *ctx, const void *in,
 	}
 }
 
+/* Internal helper function to generate a new output block. */
 static void
 xchacha20_generate(struct nyfe_xchacha20 *ctx)
 {
@@ -181,6 +195,7 @@ xchacha20_generate(struct nyfe_xchacha20 *ctx)
 	ctx->offset = 0;
 }
 
+/* Perform all ChaCha20 rounds on the input. */
 static void
 xchacha20_rounds(struct nyfe_xchacha20 *in, struct nyfe_xchacha20 *out)
 {
@@ -213,6 +228,10 @@ xchacha20_rounds(struct nyfe_xchacha20 *in, struct nyfe_xchacha20 *out)
 	nyfe_mem_zero(tmp, sizeof(tmp));
 }
 
+/*
+ * Converts a series of bytes into an unsigned 32-bit
+ * integer in little endian format.
+ */
 static u_int32_t
 bytestole32(const u_int8_t *data)
 {
@@ -228,6 +247,10 @@ bytestole32(const u_int8_t *data)
 	return (v);
 }
 
+/*
+ * Converts an unsigned 32-bit integer in little endian format
+ * into a series of bytes.
+ */
 static void
 le32tobytes(const u_int32_t val, u_int8_t *out)
 {
