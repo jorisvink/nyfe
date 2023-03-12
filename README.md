@@ -80,4 +80,5 @@ Defaults
 --------
 
 When encrypting or decrypting, the -f flag specifies what keyfile to use.
+
 If the -f flag is omitted, Nyfe will use $HOME/.nyfe/secret.key by default.
