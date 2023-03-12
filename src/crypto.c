@@ -140,8 +140,6 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	    key.id, sizeof(key.id), &cipher, &kmac);
 	nyfe_zeroize(&key, sizeof(key));
 
-	nyfe_output("working ...  ");
-
 	/*
 	 * Read data from the source file and for each read block
 	 * encrypt it under XChaCha20 and update the KMAC.
@@ -163,7 +161,8 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 		nyfe_file_write(dst, block, ret);
 		filelen += ret;
 
-		nyfe_output_spin();
+		nyfe_output("\rworking ... %llu MB",
+		    filelen / 1024 / 1024);
 	}
 
 	/* No longer need block at this point. */
@@ -185,7 +184,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	(void)close(src);
 	nyfe_file_close(dst);
 
-	nyfe_output("\bdone\n");
+	nyfe_output("\ndone\n");
 }
 
 /*
@@ -247,8 +246,6 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	    key.id, sizeof(key.id), &cipher, &kmac);
 	nyfe_zeroize(&key, sizeof(key));
 
-	nyfe_output("working ...  ");
-
 	/*
 	 * Read data from the encrypted input, updating the kmac context
 	 * and decrypting it as we go.
@@ -287,7 +284,8 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 			filelen += ret;
 		}
 
-		nyfe_output_spin();
+		nyfe_output("\rworking ... %llu MB",
+		    filelen / 1024 / 1024);
 	}
 
 	/* We must have a read a mac. */
@@ -324,7 +322,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	(void)close(src);
 	nyfe_file_close(dst);
 
-	nyfe_output("\bdone\n");
+	nyfe_output("\ndone\n");
 }
 
 /*
