@@ -43,5 +43,11 @@ $ tar zcv myarchive | nyfe encrypt -f $HOME/.nyfe/nyfe.key - myarchive.nyfe
 Decrypting is pretty similar:
 
 ```
-$ nyfe encrypt -f $HOME/.nyfe/nyfe.key myarchive.nyfe myarchive.tar
+$ nyfe decrypt -f $HOME/.nyfe/nyfe.key myarchive.nyfe myarchive.tar
+```
+
+You can also pipe into nyfe for decryption:
+
+```
+$ cat myarchive.nyfe | nyfe decrypt -f $HOME/.nyfe/nyfe.key - myarchive.tar
 ```
