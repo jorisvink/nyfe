@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 
 #include <fcntl.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -161,7 +162,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 		nyfe_file_write(dst, block, ret);
 		filelen += ret;
 
-		nyfe_output("\rworking ... %llu MB",
+		nyfe_output("\rworking ... %" PRIu64 " MB",
 		    filelen / 1024 / 1024);
 	}
 
@@ -284,7 +285,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 			filelen += ret;
 		}
 
-		nyfe_output("\rworking ... %llu MB",
+		nyfe_output("\rworking ... %" PRIu64 " MB",
 		    filelen / 1024 / 1024);
 	}
 
