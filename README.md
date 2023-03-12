@@ -54,7 +54,6 @@ $ nyfe init
 You can generate another keyfiles as needed:
 
 ```
-$ mkdir $HOME/.nyfe
 $ nyfe keygen $HOME/.nyfe/different.key
 ```
 
