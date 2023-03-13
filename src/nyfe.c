@@ -386,6 +386,5 @@ cmd_keygen(int argc, char **argv)
 	if (argc != 2)
 		usage_keygen();
 
-	printf("generating key into %s\n", argv[1]);
 	nyfe_key_generate(argv[1]);
 }
