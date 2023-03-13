@@ -166,6 +166,9 @@ nyfe_keccak1600_squeeze(struct nyfe_keccak1600 *ctx, void *buf, size_t len)
 
 	while (len != 0) {
 		for (i = 0; i < (ctx->rate / 8); i++) {
+			if (len == 0)
+				return;
+
 			v = array[i];
 			left = MIN(sizeof(v), len);
 
