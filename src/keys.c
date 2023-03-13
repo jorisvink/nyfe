@@ -241,7 +241,7 @@ key_generate_secret(struct nyfe_xchacha20 *cipher, struct nyfe_kmac256 *kmac,
 	    salt_kdf, KEY_FILE_SALT_LEN, key, sizeof(key));
 	nyfe_zeroize(passphrase, sizeof(passphrase));
 
-	nyfe_output("\bdone\n");
+	nyfe_output("\bdone\n");
 
 	nyfe_kmac256_init(&kdf, key, sizeof(key),
 	    KDF_DERIVE_LABEL, sizeof(KDF_DERIVE_LABEL) - 1);
