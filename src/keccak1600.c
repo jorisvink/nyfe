@@ -222,11 +222,10 @@ static void
 keccak1600_theta(struct nyfe_keccak1600 *ctx)
 {
 	int		y, x;
-	u_int64_t	C[5], D[5];
 
 	PRECOND(ctx != NULL);
 
-	nyfe_mem_zero(C, sizeof(C));
+	nyfe_mem_zero(ctx->C, sizeof(ctx->C));
 
 	/*
 	 * Theta step 1, from chapter 3.2.1
@@ -234,7 +233,7 @@ keccak1600_theta(struct nyfe_keccak1600 *ctx)
 	 */
 	for (y = 0; y < 5; y++) {
 		for (x = 0; x < 5; x++) {
-			C[x] ^= ctx->A[y][x];
+			ctx->C[x] ^= ctx->A[y][x];
 		}
 	}
 
@@ -242,8 +241,10 @@ keccak1600_theta(struct nyfe_keccak1600 *ctx)
 	 * Theta step 2, from chapter 3.2.1
 	 *	D[x, z]=C[(x - 1) mod 5, z] ^ C[(x+1) mod 5, (z –1) mod w].
 	 */
-	for (x = 0; x < 5; x++)
-		D[x] = C[(x + 4) % 5] ^ rotl64(C[(x + 1) % 5], 1);
+	for (x = 0; x < 5; x++) {
+		ctx->D[x] = ctx->C[(x + 4) % 5] ^
+		    rotl64(ctx->C[(x + 1) % 5], 1);
+	}
 
 	/*
 	 * Theta step 3, from chapter 3.2.1
@@ -251,12 +252,9 @@ keccak1600_theta(struct nyfe_keccak1600 *ctx)
 	 */
 	for (y = 0; y < 5; y++) {
 		for (x = 0; x < 5; x++) {
-			ctx->A[y][x] = ctx->A[y][x] ^ D[x];
+			ctx->A[y][x] = ctx->A[y][x] ^ ctx->D[x];
 		}
 	}
-
-	nyfe_mem_zero(C, sizeof(C));
-	nyfe_mem_zero(D, sizeof(D));
 }
 
 /*
@@ -289,11 +287,10 @@ static void
 keccak1600_pi(struct nyfe_keccak1600 *ctx)
 {
 	int		y, x;
-	u_int64_t	tmp[5][5];
 
 	PRECOND(ctx != NULL);
 
-	memcpy(tmp, ctx->A, sizeof(ctx->A));
+	memcpy(ctx->tmp, ctx->A, sizeof(ctx->A));
 
 	/*
 	 * Pi step from chapter 3.2.3
@@ -301,11 +298,9 @@ keccak1600_pi(struct nyfe_keccak1600 *ctx)
 	 */
 	for (y = 0; y < 5; y++) {
 		for (x = 0; x < 5; x++) {
-			ctx->A[y][x] = tmp[x][(x + (3 * y)) % 5];
+			ctx->A[y][x] = ctx->tmp[x][(x + (3 * y)) % 5];
 		}
 	}
-
-	nyfe_mem_zero(tmp, sizeof(tmp));
 }
 
 /*
@@ -315,11 +310,10 @@ static void
 keccak1600_chi(struct nyfe_keccak1600 *ctx)
 {
 	int		y, x;
-	u_int64_t	tmp[5][5];
 
 	PRECOND(ctx != NULL);
 
-	memcpy(tmp, ctx->A, sizeof(ctx->A));
+	memcpy(ctx->tmp, ctx->A, sizeof(ctx->A));
 
 	/*
 	 * Chi step from chapter 3.2.3
@@ -329,9 +323,8 @@ keccak1600_chi(struct nyfe_keccak1600 *ctx)
 	for (y = 0; y < 5; y++) {
 		for (x = 0; x < 5; x++) {
 			ctx->A[y][x] = ctx->A[y][x] ^
-			    (~tmp[y][(x + 1) % 5] & tmp[y][(x + 2) % 5]);
+			    (~ctx->tmp[y][(x + 1) % 5] &
+			    ctx->tmp[y][(x + 2) % 5]);
 		}
 	}
-
-	nyfe_mem_zero(tmp, sizeof(tmp));
 }
