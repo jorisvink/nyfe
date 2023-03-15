@@ -101,7 +101,7 @@ nyfe_keccak1600_init(struct nyfe_keccak1600 *ctx, u_int8_t pad, size_t bits)
 {
 	PRECOND(ctx != NULL);
 	PRECOND(bits == 256 || bits == 512 || bits == 768 || bits == 1024);
-	PRECOND(pad == '\x1f' || pad == '\x04' || pad == '\x06');
+	PRECOND(pad == 0 || pad == '\x1f' || pad == '\x04' || pad == '\x06');
 
 	nyfe_mem_zero(ctx, sizeof(*ctx));
 

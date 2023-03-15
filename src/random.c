@@ -28,11 +28,11 @@
 #include "nyfe.h"
 
 /*
- * The nyfe random system, based on our xchacha20 implementation.
+ * The nyfe random system, based on our Agelas implementation.
  *
- * A temporary xchacha20 state is initialized with a key and nonce derived
- * via KMAC256(K, L)[58] where K is 64 bytes of entropy pulled via
- * getentropy() and L is 58.
+ * A temporary Agelas state is initialized with a key derived
+ * via KMAC256(K, L)[64] where K is 64 bytes of entropy pulled
+ * via * getentropy() and L is 64.
  *
  * This state is used to generate 1024 of keystream into 'ks' which is
  * what ends up being copied out when random bytes are requested.
@@ -106,8 +106,8 @@ static void
 random_rekey(const void *add, size_t add_len)
 {
 	struct nyfe_kmac256		kmac;
-	struct nyfe_xchacha20		state;
-	u_int8_t			seed[64], okm[56];
+	struct nyfe_agelas		state;
+	u_int8_t			seed[64], key[NYFE_KEY_LEN];
 
 	if (getentropy(seed, sizeof(seed)) == -1)
 		fatal("getentropy: %d", errno);
@@ -119,25 +119,27 @@ random_rekey(const void *add, size_t add_len)
 	nyfe_kmac256_init(&kmac, seed, sizeof(seed),
 	    RANDOM_LABEL, sizeof(RANDOM_LABEL) - 1);
 
-	if (add != NULL && add_len > 0)
+	if (add != NULL && add_len > 0) {
+		nyfe_kmac256_update(&kmac, &add_len, sizeof(add_len));
 		nyfe_kmac256_update(&kmac, add, add_len);
+	}
 
 	/*
 	 * Derive 56 bytes of okm such that:
-	 *	32 bytes xchacha20 key = okm[0]
-	 *	24 bytes xchacha20 nonce = okm[32]
+	 *	32 bytes agelas key = okm[0]
+	 *	32 bytes agelas nonce = okm[32]
 	 */
-	nyfe_kmac256_final(&kmac, okm, sizeof(okm));
+	nyfe_kmac256_final(&kmac, key, sizeof(key));
 	nyfe_mem_zero(&kmac, sizeof(kmac));
 
-	/* Setup the xchacha20 state using the derived key and nonce. */
-	nyfe_xchacha20_setup(&state, &okm[0], 32, &okm[32], 24);
-	nyfe_mem_zero(okm, sizeof(okm));
+	/* Setup the Agelas state using the derived key. */
+	nyfe_agelas_init(&state, key, sizeof(key));
+	nyfe_mem_zero(key, sizeof(key));
 
 	/* Generate new keystream. */
 	ks_available = sizeof(ks);
 	nyfe_mem_zero(ks, sizeof(ks));
-	nyfe_xchacha20_encrypt(&state, ks, ks, sizeof(ks));
+	nyfe_agelas_encrypt(&state, ks, ks, sizeof(ks));
 
 	/* We don't need state anymore. */
 	nyfe_mem_zero(&state, sizeof(state));

@@ -22,6 +22,7 @@ ifeq ("$(OSNAME)", "linux")
 endif
 
 SRC=	src/nyfe.c \
+	src/agelas.c \
 	src/crypto.c \
 	src/file.c \
 	src/keccak1600.c \
@@ -30,8 +31,7 @@ SRC=	src/nyfe.c \
 	src/mem.c \
 	src/sha3.c \
 	src/random.c \
-	src/selftest.c \
-	src/xchacha20.c
+	src/selftest.c
 
 OBJS=	$(SRC:src/%.c=$(OBJDIR)/%.o)
 

@@ -6,27 +6,38 @@ for confidentiality and integrity protection.
 
 Nyfe is licensed under the ISC license.
 
+It is an excercise in building a file encryption tool on a single
+cryptographic function: Keccak.
+
 Cryptography
 ------------
 
-Nyfe provides confidentiality and integrity protection on its encrypted
-data using XChaCha20 and KMAC256 respectively.
+WARNING: Nyfe uses experimental cryptography.
 
-It does this with keys derived from strong 256-bit symmetrical secrets
-that are stored in keyfiles.
+Its confidentiality and integrity are protected using a permutation
+based authenticated stream cipher: Agelas.
 
-Separate keys, nonce and seeds for confidentiality and integrity
-protection are derived from the base symmetrical secret for each new file
-that is encrypted, using KMAC256 as a PRF with separate customization labels
-for each.
+Agelas is an experimental AE construction aimed at trying to design
+a simple to understand and easy to implement AE stream cipher.
 
-This project aims at producing a readable and trusted file encryption
-tool for personal use.
+KMAC256 is used as a KDF for all derivations that take place.
 
-It is also very minimal and lightweight as it has no external
+The keys used with this cipher are derived from strong
+256-bit symmetrical secrets that are stored in keyfiles.
+
+Separate keys and seeds are derived from the base symmetrical secret
+for each new file.
+
+Nyfe is very minimal and lightweight as it has no external
 dependencies (other than libbsd-dev on Linux).
 
 The lack of meta-data in encrypted files is by design.
+
+Performance
+-----------
+
+Performance is not considered at this stage, code correctness
+and extreme care in handling sensitive data was.
 
 Building
 --------

@@ -101,7 +101,6 @@ main(int argc, char *argv[])
 	argv++;
 
 	nyfe_selftest_kmac256();
-	nyfe_selftest_xchacha20();
 
 	nyfe_file_init();
 	nyfe_random_init();
