@@ -1,4 +1,4 @@
-![Logo](logo.jpg)
+![Logo](logo.png | width=256)
 
 Nyfe
 ----
