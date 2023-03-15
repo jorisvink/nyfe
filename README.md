@@ -1,4 +1,4 @@
-![Logo](logo.png | width=256)
+<img src="logo.png" alt="Nyfe" width="256px" />
 
 Nyfe
 ----
