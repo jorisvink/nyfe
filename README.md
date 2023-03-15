@@ -26,8 +26,8 @@ a simple to understand and easy to implement AE stream cipher.
 
 KMAC256 is used as a KDF for all derivations that take place.
 
-The keys used with this cipher are derived from strong
-256-bit symmetrical secrets that are stored in keyfiles.
+The keys used with Agelas are derived from strong 256-bit symmetrical
+secrets that are stored in keyfiles.
 
 Separate keys and seeds are derived from the base symmetrical secret
 for each new file.
