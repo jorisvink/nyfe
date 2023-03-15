@@ -6,8 +6,8 @@ for confidentiality and integrity protection.
 
 Nyfe is licensed under the ISC license.
 
-It is an excercise in building a file encryption tool on a single
-cryptographic function: Keccak.
+It is an excercise in building a file encryption tool based on
+a single cryptographic function: Keccak.
 
 Cryptography
 ------------
