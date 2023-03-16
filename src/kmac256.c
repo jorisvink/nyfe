@@ -203,7 +203,7 @@ kmac256_encode_string(const void *in, size_t inlen, u_int8_t *out,
 
 	out[0] = count;
 	for (idx = count; idx > 0; idx--) {
-		out[idx] = bits & 0xff;
+		out[idx] = (u_int8_t)(bits & 0xff);
 		bits = bits >> 8;
 	}
 
