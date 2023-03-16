@@ -49,7 +49,7 @@ nyfe_file_remove_lingering(void)
 	while ((file = LIST_FIRST(&files)) != NULL) {
 		LIST_REMOVE(file, list);
 
-		if (unlink(file->path) == -1) {
+		if (unlink(file->path) == -1 && errno != ENOENT) {
 			printf("WARNING: failed to remove '%s', do not use\n",
 			    file->path);
 		}
