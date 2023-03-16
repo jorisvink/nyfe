@@ -117,10 +117,8 @@ nyfe_mem_zero(void *ptr, size_t len)
 
 	p = (volatile char *)ptr;
 
-	if (p != NULL) {
-		while (len-- > 0)
-			*(p)++ = 0x00;
-	}
+	while (len-- > 0)
+		*(p)++ = 0x00;
 }
 
 /*
