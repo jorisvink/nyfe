@@ -1,7 +1,6 @@
 <img src="logo.png" alt="Nyfe" width="256px" />
 
-Nyfe
-----
+# Nyfe
 
 A software based file encryption tool with some modern primitives
 for confidentiality and integrity protection.
@@ -16,12 +15,11 @@ dependencies (other than libbsd-dev on Linux).
 
 You probably don't want to use this.
 
-Cryptography
-------------
+# Cryptography
 
 WARNING: Nyfe uses experimental cryptography.
 
-# Confidentiality and Integrity
+## Confidentiality and Integrity
 
 Its confidentiality and integrity are protected using a permutation
 based authenticated stream cipher: Agelas.
@@ -32,12 +30,12 @@ on a Sponge function.
 
 Lots of inspiration was taken from Keyak and SpongeWrap.
 
-# KDF
+## KDF
 
 KMAC256 is used as a KDF for all derivations that take place.
 KMAC256 is a NIST standard.
 
-# Keys
+## Keys
 
 The keys used with Agelas are derived from strong 256-bit symmetrical
 secrets that are stored in keyfiles in combination with unique per-file seeds.
@@ -45,18 +43,16 @@ secrets that are stored in keyfiles in combination with unique per-file seeds.
 Separate keys and seeds are derived from the base symmetrical secret
 for each new file.
 
-# Metadata
+## Metadata
 
 The lack of meta-data in encrypted files is by design.
 
-Performance
------------
+# Performance
 
 Performance is not considered at this stage, code correctness
 and extreme care in handling sensitive data was.
 
-Building
---------
+# Building
 
 Nyfe has been compiled on OpenBSD, MacOS 13.x and Ubuntu 22.04.
 
@@ -108,8 +104,7 @@ You can also pipe into nyfe for decryption:
 $ cat myarchive.nyfe | nyfe decrypt -f $HOME/.nyfe/different.key - myarchive.tar
 ```
 
-Defaults
---------
+# Defaults
 
 When encrypting or decrypting, the -f flag specifies what keyfile to use.
 
