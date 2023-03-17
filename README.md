@@ -2,22 +2,22 @@
 
 # Nyfe
 
-A software based file encryption tool with some modern primitives
-for confidentiality and integrity protection.
-
-Nyfe is licensed under the ISC license.
-
-It is an excercise in building a file encryption tool based on
-a single cryptographic function: Keccak-f[1600,24].
+A software based file encryption tool where all cryptographic parts
+are based on a single cryptographic function: Keccak-f[1600,24].
 
 Nyfe is very minimal and lightweight as it has no external
 dependencies (other than libbsd-dev on Linux).
 
-You probably don't want to use this.
+# License
+
+Nyfe is licensed under the ISC license.
 
 # Cryptography
 
-WARNING: Nyfe uses experimental cryptography.
+WARNING: Nyfe uses experimental cryptography that is currently
+the subject of much ongoing research.
+
+**You** probably don't want to use this.
 
 ## Confidentiality and Integrity
 
@@ -33,6 +33,7 @@ Lots of inspiration was taken from Keyak and SpongeWrap.
 ## KDF
 
 KMAC256 is used as a KDF for all derivations that take place.
+
 KMAC256 is a NIST standard.
 
 ## Keys
