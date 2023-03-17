@@ -83,7 +83,7 @@ static const u_int64_t iota_rc[] = {
 /*
  * Initialize a keccak1600 context. The caller supplies the number of
  * bits its requesting. This in combination with the padding byte used
- * denotes the type. We only support 128, 256 and 512 bits.
+ * denotes the type. We accept 256, 512, 768 and 1024 bits.
  *
  * This means the following SHA3 constructs can be made:
  *
