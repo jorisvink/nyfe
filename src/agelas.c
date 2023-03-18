@@ -25,7 +25,7 @@
  * Agelas: An experimental, simple and fully authenticated stream cipher
  * based on Keccak1600. This work is based on Keyak, Spongewrap etc.
  *
- * init(key, nonce):
+ * init(key):
  *	K = bytepad(len(key) || key || 0x01, 136)
  *	State <- Keccak1600.init(K)
  *
