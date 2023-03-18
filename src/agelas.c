@@ -143,7 +143,7 @@ nyfe_agelas_encrypt(struct nyfe_agelas *ctx, const void *in,
 }
 
 /*
- * Decrypt and authenticate plaintext given in `in` to the `out` buffer.
+ * Decrypt and authenticate ciphertext given in `in` to the `out` buffer.
  * These buffers may be the same.
  */
 void
