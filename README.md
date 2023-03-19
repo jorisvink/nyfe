@@ -14,7 +14,7 @@ Nyfe is licensed under the ISC license.
 
 # Cryptography
 
-WARNING: Nyfe uses an cryptography that is currently not yet standarized.
+WARNING: Nyfe uses an cryptography that is currently not standarized.
 
 **You** may not want to use this just yet.
 
@@ -25,7 +25,7 @@ based authenticated stream cipher: Agelas.
 
 Agelas is an experimental AE construction aimed at trying to design
 a simple to understand and easy to implement AE stream cipher based
-on a Sponge function.
+on a Sponge function (in this case, Keccak-f[1600,24]).
 
 Lots of inspiration was taken from Keyak and SpongeWrap.
 
