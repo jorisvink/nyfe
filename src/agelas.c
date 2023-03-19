@@ -32,6 +32,7 @@
  * encryption(pt):
  *	for each 136 byte block, do
  *		C = bytepad(counter, 136)
+ *		C[135] = 0x01
  *		counter = counter + 1
  *		Keccak1600.absorb(C)
  *		Keccak1600.absorb(State)
@@ -43,6 +44,7 @@
  * decryption(ct):
  *	for each 136 byte block, do
  *		C = bytepad(counter, 136)
+ *		C[135] = 0x01
  *		counter = counter + 1
  *		Keccak1600.absorb(C)
  *		Keccak1600.absorb(State)
@@ -61,6 +63,7 @@
  *
  * authenticate(tag, taglen):
  *	C = bytepad(counter, 136)
+ *	C[135] = 0xf0
  *	counter = counter + 1
  *	Keccak1600.absorb(C)
  *	Keccak1600.absorb(State)
@@ -71,7 +74,7 @@
 #define AGELAS_SPONGE_RATE	136
 #define AGELAS_ABSORB_LEN	(AGELAS_SPONGE_RATE - 2)
 
-static void	agelas_absorb_state(struct nyfe_agelas *);
+static void	agelas_absorb_state(struct nyfe_agelas *, u_int8_t);
 static void	agelas_bytepad(const void *, size_t, u_int8_t *, size_t);
 
 /*
@@ -135,7 +138,7 @@ nyfe_agelas_encrypt(struct nyfe_agelas *ctx, const void *in,
 
 	for (idx = 0; idx < len; idx++) {
 		if (ctx->offset == sizeof(ctx->state))
-			agelas_absorb_state(ctx);
+			agelas_absorb_state(ctx, 0x01);
 		tmp = src[idx];
 		dst[idx] = tmp ^ ctx->state[ctx->offset];
 		ctx->state[ctx->offset++] ^= tmp;
@@ -163,7 +166,7 @@ nyfe_agelas_decrypt(struct nyfe_agelas *ctx, const void *in,
 
 	for (idx = 0; idx < len; idx++) {
 		if (ctx->offset == sizeof(ctx->state))
-			agelas_absorb_state(ctx);
+			agelas_absorb_state(ctx, 0x01);
 		dst[idx] = src[idx] ^ ctx->state[ctx->offset];
 		ctx->state[ctx->offset++] ^= dst[idx];
 	}
@@ -196,7 +199,7 @@ nyfe_agelas_authenticate(struct nyfe_agelas *ctx, u_int8_t *tag, size_t len)
 	PRECOND(tag != NULL);
 	PRECOND(len == NYFE_TAG_LEN);
 
-	agelas_absorb_state(ctx);
+	agelas_absorb_state(ctx, 0xf0);
 	nyfe_keccak1600_squeeze(&ctx->sponge, tag, len);
 }
 
@@ -204,7 +207,7 @@ nyfe_agelas_authenticate(struct nyfe_agelas *ctx, u_int8_t *tag, size_t len)
  * Absorb the current state into the Keccak1600 and squeeze out a new one.
  */
 static void
-agelas_absorb_state(struct nyfe_agelas *ctx)
+agelas_absorb_state(struct nyfe_agelas *ctx, u_int8_t tag)
 {
 	u_int64_t	counter;
 	u_int8_t	buf[AGELAS_SPONGE_RATE];
@@ -213,6 +216,7 @@ agelas_absorb_state(struct nyfe_agelas *ctx)
 
 	counter = htobe64(ctx->counter);
 	agelas_bytepad(&counter, sizeof(counter), buf, sizeof(buf));
+	buf[AGELAS_SPONGE_RATE - 1] = tag;
 
 	nyfe_keccak1600_absorb(&ctx->sponge, buf, sizeof(buf));
 	nyfe_keccak1600_absorb(&ctx->sponge, ctx->state, sizeof(ctx->state));
