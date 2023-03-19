@@ -185,10 +185,9 @@ nyfe_read_passphrase(void *buf, size_t len)
 
 	cur = old;
 	cur.c_lflag &= ~(ECHO | ECHONL);
-	cur.c_cc[VSTATUS] = _POSIX_VDISABLE;
 
-	if (tcsetattr(fd, TCSAFLUSH | TCSASOFT, &cur) == -1) {
-		(void)tcsetattr(fd, TCSAFLUSH | TCSASOFT, &old);
+	if (tcsetattr(fd, TCSAFLUSH, &cur) == -1) {
+		(void)tcsetattr(fd, TCSANOW, &old);
 		fatal("tcsetattr: %s", errno_s);
 	}
 
@@ -217,7 +216,7 @@ nyfe_read_passphrase(void *buf, size_t len)
 	ptr[off] = '\0';
 
 	/* Restore terminal settings. */
-	if (tcsetattr(fd, TCSAFLUSH | TCSASOFT, &old) == -1)
+	if (tcsetattr(fd, TCSANOW, &old) == -1)
 		fatal("tcsetattr: %s", errno_s);
 
 	nyfe_output("\n");
