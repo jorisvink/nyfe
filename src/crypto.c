@@ -126,7 +126,8 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	filelen = 0;
 	for (;;) {
 		if ((sig = nyfe_signal_pending()) != -1) {
-			(void)unlink(out);
+			if (out != NULL)
+				(void)unlink(out);
 			fatal("clean abort due to received signal %d", sig);
 		}
 
