@@ -89,7 +89,13 @@ $ nyfe encrypt myarchive.tar myarchive.nyfe
 You can pipe straight into nyfe too if thats your thing:
 
 ```
-$ tar zcv myarchive | nyfe encrypt -f $HOME/.nyfe/different.key - myarchive.nyfe
+$ tar zcv myarchive | nyfe encrypt -f $HOME/.nyfe/different.key myarchive.nyfe
+```
+
+You can also let nyfe output the encrypted data to stdout:
+
+```
+$ tar zcv myarchive | nyfe encrypt > myarchive.nyfe
 ```
 
 Decrypting is pretty similar:
@@ -101,8 +107,11 @@ $ nyfe decrypt myarchive.nyfe myarchive.tar
 You can also pipe into nyfe for decryption:
 
 ```
-$ cat myarchive.nyfe | nyfe decrypt -f $HOME/.nyfe/different.key - myarchive.tar
+$ cat myarchive.nyfe | nyfe decrypt -f $HOME/.nyfe/different.key myarchive.tar
 ```
+
+When decrypting Nyfe will refuse to output decrypted data to stdout since
+that is a security risk as the data output is not yet verified.
 
 # Defaults
 

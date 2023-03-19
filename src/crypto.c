@@ -78,12 +78,20 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	int				src, dst, sig;
 	u_int8_t			seed[NYFE_SEED_LEN], tag[NYFE_TAG_LEN];
 
-	PRECOND(in != NULL);
-	PRECOND(out != NULL);
+	/* in may be NULL to indicate stdin. */
+	/* out may be NULL to indicate stdout. */
 	PRECOND(keyfile != NULL);
 
-	/* Open the destination early, so we exit early if we can't do it. */
-	dst = nyfe_file_open(out, NYFE_FILE_CREATE);
+	/*
+	 * If stdout was requested, we set dst to STODUT_FILENO, otherwise
+	 * we open the destination file as early as possible so we can exit
+	 * without too much secrets in memory early.
+	 */
+	if (out == NULL) {
+		dst = STDOUT_FILENO;
+	} else {
+		dst = nyfe_file_open(out, NYFE_FILE_CREATE);
+	}
 
 	/*
 	 * Verify and decrypt the selected keyfile.
@@ -96,7 +104,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 		fatal("failed to allocate encryption buffer");
 
 	/* If stdin was requested, just set src to STDIN_FILENO. */
-	if (!strcmp(in, "-")) {
+	if (in == NULL) {
 		src = STDIN_FILENO;
 	} else {
 		src = nyfe_file_open(in, NYFE_FILE_READ);
@@ -150,7 +158,9 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	nyfe_mem_zero(&cipher, sizeof(cipher));
 
 	(void)close(src);
-	nyfe_file_close(dst);
+
+	if (dst != STDOUT_FILENO)
+		nyfe_file_close(dst);
 
 	nyfe_output("\ndone\n");
 }
@@ -172,7 +182,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	u_int8_t		seed[NYFE_SEED_LEN];
 	u_int8_t		tag[NYFE_TAG_LEN], expected[NYFE_TAG_LEN];
 
-	PRECOND(in != NULL);
+	/* in may be NULL to indicate stdin. */
 	PRECOND(out != NULL);
 	PRECOND(keyfile != NULL);
 
@@ -190,7 +200,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 		fatal("failed to allocate decryption buffer");
 
 	/* If stdin was requested, just set src to STDIN_FILENO. */
-	if (!strcmp(in, "-")) {
+	if (in == NULL) {
 		src = STDIN_FILENO;
 	} else {
 		src = nyfe_file_open(in, NYFE_FILE_READ);

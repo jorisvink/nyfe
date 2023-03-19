@@ -124,7 +124,7 @@ nyfe_signal_pending(void)
 	return (sig_recv);
 }
 
-/* Log something to stdout unless we're quiet. */
+/* Log something to stderr unless we're quiet. */
 void
 nyfe_output(const char *fmt, ...)
 {
@@ -136,10 +136,10 @@ nyfe_output(const char *fmt, ...)
 		return;
 
 	va_start(args, fmt);
-	vprintf(fmt, args);
+	vfprintf(stderr, fmt, args);
 	va_end(args);
 
-	fflush(stdout);
+	fflush(stderr);
 }
 
 /* Move spinner to next state. */
@@ -149,8 +149,8 @@ nyfe_output_spin(void)
 	static int	state = 0;
 
 	if (nyfe_quiet == 0) {
-		printf("\b%c", spinner[state++]);
-		fflush(stdout);
+		fprintf(stderr, "\b%c", spinner[state++]);
+		fflush(stderr);
 		state = state % 7;
 	}
 }
@@ -327,7 +327,7 @@ static void
 encrypt_decrypt(int argc, char **argv, int encrypt)
 {
 	int		ch;
-	const char	*keyfile;
+	const char	*keyfile, *in, *out;
 
 	PRECOND(argc >= 0);
 	PRECOND(argv != NULL);
@@ -354,13 +354,43 @@ encrypt_decrypt(int argc, char **argv, int encrypt)
 	if (keyfile == NULL)
 		keyfile = path_default_keyfile();
 
-	if (argc != 2)
-		usage_encdec();
+	in = NULL;
+	out = NULL;
+
+	if (encrypt) {
+		switch (argc) {
+		case 0:
+			break;
+		case 1:
+			out = argv[0];
+			break;
+		case 2:
+			in = argv[0];
+			out = argv[1];
+			break;
+		default:
+			usage_encdec();
+			/* NOTREACHED */
+		}
+	} else {
+		switch (argc) {
+		case 1:
+			out = argv[0];
+			break;
+		case 2:
+			in = argv[0];
+			out = argv[1];
+			break;
+		default:
+			usage_encdec();
+			/* NOTREACHED */
+		}
+	}
 
 	if (encrypt)
-		nyfe_crypto_encrypt(argv[0], argv[1], keyfile);
+		nyfe_crypto_encrypt(in, out, keyfile);
 	else
-		nyfe_crypto_decrypt(argv[0], argv[1], keyfile);
+		nyfe_crypto_decrypt(in, out, keyfile);
 }
 
 /* Entry points for the revelant commands. */
