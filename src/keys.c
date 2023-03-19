@@ -16,12 +16,6 @@
 
 #include <sys/types.h>
 
-#if defined(__linux__)
-#include <bsd/readpassphrase.h>
-#else
-#include <readpassphrase.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -237,9 +231,7 @@ key_generate_secret(struct nyfe_agelas *cipher, const u_int8_t *seed,
 	nyfe_zeroize_register(passphrase, sizeof(passphrase));
 
 	nyfe_mem_zero(passphrase, sizeof(passphrase));
-	if (readpassphrase("passphrase:", passphrase, sizeof(passphrase),
-	    RPP_ECHO_OFF | RPP_REQUIRE_TTY) == NULL)
-		fatal("failed to read passphrase");
+	nyfe_read_passphrase(passphrase, sizeof(passphrase));
 
 	nyfe_output("deriving keys to verify and unlock keyfile ... |");
 

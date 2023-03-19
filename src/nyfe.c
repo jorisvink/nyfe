@@ -19,13 +19,16 @@
 #include <sys/stat.h>
 #include <sys/queue.h>
 
+#include <fcntl.h>
 #include <limits.h>
+#include <paths.h>
 #include <pwd.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include "nyfe.h"
@@ -156,6 +159,68 @@ nyfe_output_spin(void)
 		fflush(stderr);
 		state = state % 7;
 	}
+}
+
+/*
+ * Read a passphrase from the user without echoing it.
+ */
+void
+nyfe_read_passphrase(void *buf, size_t len)
+{
+	ssize_t			ret;
+	size_t			off;
+	u_int8_t		*ptr;
+	int			fd, sig;
+	struct termios		cur, old;
+
+	PRECOND(buf != NULL);
+	PRECOND(len > 0);
+
+	/* Kill echo on the terminal. */
+	if ((fd = open(_PATH_TTY, O_RDWR)) == -1)
+		fatal("open(%s): %s", _PATH_TTY, errno_s);
+
+	if (tcgetattr(fd, &old) == -1)
+		fatal("tcgetattr: %s", errno_s);
+
+	cur = old;
+	cur.c_lflag &= ~(ECHO | ECHONL);
+	cur.c_cc[VSTATUS] = _POSIX_VDISABLE;
+
+	if (tcsetattr(fd, TCSAFLUSH | TCSASOFT, &cur) == -1) {
+		(void)tcsetattr(fd, TCSAFLUSH | TCSASOFT, &old);
+		fatal("tcsetattr: %s", errno_s);
+	}
+
+	/* Read the passphrase from the user. */
+	nyfe_output("passphrase: ");
+
+	off = 0;
+	ptr = buf;
+
+	while (off != (len - 1)) {
+		if ((sig = nyfe_signal_pending()) != -1)
+			fatal("aborted due to received signal %d", sig);
+
+		if ((ret = read(fd, &ptr[off], 1)) == -1) {
+			if (errno == EINTR)
+				continue;
+			fatal("%s: read failed: %s", __func__, errno_s);
+		}
+
+		if (ptr[off] == '\n')
+			break;
+
+		off++;
+	}
+
+	ptr[off] = '\0';
+
+	/* Restore terminal settings. */
+	if (tcsetattr(fd, TCSAFLUSH | TCSASOFT, &old) == -1)
+		fatal("tcsetattr: %s", errno_s);
+
+	nyfe_output("\n");
 }
 
 /*

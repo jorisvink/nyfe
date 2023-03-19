@@ -124,6 +124,7 @@ void	nyfe_agelas_decrypt(struct nyfe_agelas *, const void *, void *, size_t);
 /* src/nyfe.c */
 void	nyfe_output_spin(void);
 int	nyfe_signal_pending(void);
+void	nyfe_read_passphrase(void *, size_t);
 void	fatal(const char *, ...) __attribute__((noreturn));
 void	nyfe_output(const char *, ...) __attribute__((format (printf, 1, 2)));
 
