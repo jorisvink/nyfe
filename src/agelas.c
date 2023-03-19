@@ -174,7 +174,7 @@ nyfe_agelas_decrypt(struct nyfe_agelas *ctx, const void *in,
 
 /*
  * Add additional authenticated data into the Agelas context.
- * The data its length must be 0 < len <= 134.
+ * The data its length must be 0 < len <= 133.
  */
 void
 nyfe_agelas_aad(struct nyfe_agelas *ctx, const void *data, size_t len)
@@ -183,9 +183,11 @@ nyfe_agelas_aad(struct nyfe_agelas *ctx, const void *data, size_t len)
 
 	PRECOND(ctx != NULL);
 	PRECOND(data != NULL);
-	PRECOND(len <= AGELAS_ABSORB_LEN);
+	PRECOND(len <= AGELAS_ABSORB_LEN - 1);
 
 	agelas_bytepad(data, len, buf, sizeof(buf));
+	buf[AGELAS_SPONGE_RATE - 1] = 0x04;
+
 	nyfe_keccak1600_absorb(&ctx->sponge, buf, sizeof(buf));
 }
 
@@ -199,7 +201,7 @@ nyfe_agelas_authenticate(struct nyfe_agelas *ctx, u_int8_t *tag, size_t len)
 	PRECOND(tag != NULL);
 	PRECOND(len == NYFE_TAG_LEN);
 
-	agelas_absorb_state(ctx, 0xf0);
+	agelas_absorb_state(ctx, 0x80);
 	nyfe_keccak1600_squeeze(&ctx->sponge, tag, len);
 }
 
