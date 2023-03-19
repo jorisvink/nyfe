@@ -167,7 +167,6 @@ nyfe_output_spin(void)
 void
 nyfe_read_passphrase(void *buf, size_t len)
 {
-	ssize_t			ret;
 	size_t			off;
 	u_int8_t		*ptr;
 	int			fd, sig;
@@ -201,7 +200,7 @@ nyfe_read_passphrase(void *buf, size_t len)
 		if ((sig = nyfe_signal_pending()) != -1)
 			fatal("aborted due to received signal %d", sig);
 
-		if ((ret = read(fd, &ptr[off], 1)) == -1) {
+		if (read(fd, &ptr[off], 1) == -1) {
 			if (errno == EINTR)
 				continue;
 			fatal("%s: read failed: %s", __func__, errno_s);
