@@ -35,10 +35,12 @@ static void	cmd_init(int, char **);
 static void	cmd_keygen(int, char **);
 static void	cmd_encrypt(int, char **);
 static void	cmd_decrypt(int, char **);
+static void	cmd_keyclone(int, char **);
 
 static void	usage(void) __attribute__((noreturn));
 static void	usage_keygen(void) __attribute__((noreturn));
 static void	usage_encdec(void) __attribute__((noreturn));
+static void	usage_keyclone(void) __attribute__((noreturn));
 
 static void	setup_paths(void);
 static void	setup_signals(void);
@@ -59,6 +61,7 @@ static const struct {
 	{ "encrypt",	cmd_encrypt },
 	{ "decrypt",	cmd_decrypt },
 	{ "keygen",	cmd_keygen },
+	{ "keyclone",	cmd_keyclone },
 	{ NULL, NULL },
 };
 
@@ -243,8 +246,9 @@ usage(void)
 	fprintf(stderr, "commands:\n");
 	fprintf(stderr, "\tencrypt  - Encrypts a file\n");
 	fprintf(stderr, "\tdecrypt  - Decrypts a file\n");
+	fprintf(stderr, "\tkeyclone - Clone a keyfile\n");
 	fprintf(stderr, "\tkeygen   - Generate a new key file\n");
-	fprintf(stderr, "\tinit     - Set up nyfe for the first time.\n");
+	fprintf(stderr, "\tinit     - Set up nyfe for the first time\n");
 
 	exit(1);
 }
@@ -254,6 +258,7 @@ static void
 usage_encdec(void)
 {
 	fprintf(stderr, "Usage: nyfe encrypt/decrypt [options] [in] [out]\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "options:\n");
 	fprintf(stderr, "\t-f  - Specifies which keyfile to use.\n");
 	fprintf(stderr, "\t-q  - Be quiet.\n");
@@ -276,11 +281,22 @@ usage_keygen(void)
 }
 
 static void
+usage_keyclone(void)
+{
+	fprintf(stderr, "Usage: nyfe keyclone [in] [out]\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Clones the encrypted key data from a keyfile\n");
+	fprintf(stderr, "into a new keyfile with a different passphrase.\n");
+
+	exit(1);
+}
+
+static void
 usage_init(void)
 {
 	fprintf(stderr, "Usage: nyfe init\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "Creates a default keyfile if it does not exist yet.");
+	fprintf(stderr, "Create a default keyfile if it does not exist yet.\n");
 
 	exit(1);
 }
@@ -314,7 +330,7 @@ cmd_init(int argc, char **argv)
 		usage_init();
 
 	keyfile = path_default_keyfile();
-	nyfe_key_generate(keyfile);
+	nyfe_key_generate(keyfile, NULL);
 
 	printf("nyfe initialized!\n");
 }
@@ -415,5 +431,17 @@ cmd_keygen(int argc, char **argv)
 	if (argc != 2)
 		usage_keygen();
 
-	nyfe_key_generate(argv[1]);
+	nyfe_key_generate(argv[1], NULL);
+}
+
+static void
+cmd_keyclone(int argc, char **argv)
+{
+	PRECOND(argc >= 0);
+	PRECOND(argv != NULL);
+
+	if (argc != 3)
+		usage_keyclone();
+
+	nyfe_key_clone(argv[1], argv[2]);
 }

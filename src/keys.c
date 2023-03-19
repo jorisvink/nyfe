@@ -137,10 +137,11 @@ nyfe_key_load(struct nyfe_key *key, const char *file)
 }
 
 /*
- * Generate a new key into the given keyfile.
+ * Generate a new key into the given keyfile, or if curkey is not NULL,
+ * generate a new keyfile with the contents of curkey.
  */
 void
-nyfe_key_generate(const char *file)
+nyfe_key_generate(const char *file, struct nyfe_key *curkey)
 {
 	int				fd;
 	struct nyfe_key			key;
@@ -149,6 +150,7 @@ nyfe_key_generate(const char *file)
 	u_int8_t			seed[NYFE_SEED_LEN];
 
 	PRECOND(file != NULL);
+	/* curkey may be NULL to indicate a new key generation. */
 
 	nyfe_output("creating keyfile '%s'\n", file);
 
@@ -156,14 +158,25 @@ nyfe_key_generate(const char *file)
 	fd = nyfe_file_open(file, NYFE_FILE_CREATE);
 
 	/*
+	 * If curkey is NULL:
+	 *
 	 * Generate the key ID and the key data, do a nyfe_random_init()
 	 * in between so both outputs are not related to each other since
 	 * id is stored in plaintext in the key file.
+	 *
+	 * Or if curkey was not NULL:
+	 *
+	 * Copy over the information instead of randomly creating it.
 	 */
-	nyfe_random_bytes(key.id, sizeof(key.id));
-	nyfe_random_init();
-	nyfe_random_bytes(key.data, sizeof(key.data));
-	nyfe_random_init();
+	if (curkey == NULL) {
+		nyfe_random_bytes(key.id, sizeof(key.id));
+		nyfe_random_init();
+		nyfe_random_bytes(key.data, sizeof(key.data));
+		nyfe_random_init();
+	} else {
+		memcpy(key.id, curkey->id, sizeof(curkey->id));
+		memcpy(key.data, curkey->data, sizeof(curkey->data));
+	}
 
 	/* Generate random seed and derive key material for this file. */
 	nyfe_random_bytes(seed, sizeof(seed));
@@ -184,6 +197,20 @@ nyfe_key_generate(const char *file)
 	nyfe_mem_zero(&cipher, sizeof(cipher));
 
 	nyfe_file_close(fd);
+}
+
+/*
+ * Clone an existing key from one keyfile to another keyfile.
+ */
+void
+nyfe_key_clone(const char *in, const char *out)
+{
+	struct nyfe_key		key;
+
+	nyfe_key_load(&key, in);
+	nyfe_key_generate(out, &key);
+
+	nyfe_zeroize(&key, sizeof(key));
 }
 
 /*

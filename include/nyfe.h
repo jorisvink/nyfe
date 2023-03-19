@@ -156,8 +156,9 @@ size_t	nyfe_keccak1600_absorb(struct nyfe_keccak1600 *,
 	    const void *, size_t);
 
 /* src/keys.c */
-void	nyfe_key_generate(const char *);
+void	nyfe_key_clone(const char *, const char *);
 void	nyfe_key_load(struct nyfe_key *, const char *);
+void	nyfe_key_generate(const char *, struct nyfe_key *);
 
 /* src/sha3.c */
 void	nyfe_sha3_init256(struct nyfe_sha3 *);
