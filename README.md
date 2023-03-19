@@ -35,6 +35,17 @@ KMAC256 is used as a KDF for all derivations that take place.
 
 KMAC256 is a NIST standard.
 
+## Random
+
+The random system in Nyfe is also based on the Keccak sponge.
+
+In this case, it will instantiate an Agelas context with keys
+that are derived from a random seed from the system which are
+run through KMAC256.
+
+It then allows random byte generation of up to 1024 bytes before
+rekeying itself.
+
 ## Keys
 
 The keys used with Agelas are derived from strong 256-bit symmetrical
