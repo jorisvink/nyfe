@@ -1,5 +1,3 @@
-<img src="logo.png" alt="Nyfe" width="256px" />
-
 # Nyfe
 
 A software based file encryption tool where all cryptographic parts
@@ -136,3 +134,9 @@ that is a security risk as the data output is not yet verified.
 When encrypting or decrypting, the -f flag specifies what keyfile to use.
 
 If the -f flag is omitted, Nyfe will use $HOME/.nyfe/secret.key by default.
+
+# Mascotte
+
+Because mascottes are cool, here's SpongeNyfe:
+
+<img src="logo.png" alt="Nyfe" width="256px" />
