@@ -80,6 +80,14 @@ You can generate another keyfiles as needed:
 $ nyfe keygen $HOME/.nyfe/different.key
 ```
 
+You can also clone keyfiles, as a means of exporting them with
+a different passphrase:
+
+
+```
+$ nyfe keyclone $HOME/.nyfe/different.key shared.key
+```
+
 Now you can encrypt some things with the default key:
 
 ```
