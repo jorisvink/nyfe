@@ -16,7 +16,7 @@ Nyfe is licensed under the ISC license.
 
 WARNING: Nyfe uses an cryptography that is currently not standarized.
 
-**You** may not want to use this just yet.
+**You** may not want to use.
 
 ## Confidentiality and Integrity
 
