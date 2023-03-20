@@ -131,8 +131,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 			fatal("clean abort due to received signal %d", sig);
 		}
 
-		ret = nyfe_file_read(src, block, BLOCK_SIZE);
-		if (ret == 0)
+		if ((ret = nyfe_file_read(src, block, BLOCK_SIZE)) == 0)
 			break;
 
 		nyfe_agelas_encrypt(&cipher, block, block, ret);
@@ -234,8 +233,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 			fatal("clean abort due to received signal %d", sig);
 		}
 
-		ret = nyfe_file_read(src, block, BLOCK_SIZE);
-		if (ret == 0)
+		if ((ret = nyfe_file_read(src, block, BLOCK_SIZE)) == 0)
 			break;
 
 		if (pending) {
