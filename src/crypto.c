@@ -262,7 +262,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 		    filelen / 1024 / 1024);
 	}
 
-	/* We must have a read a tag. */
+	/* We must have read a tag. */
 	if (pending != 1)
 		fatal("%s: no pending integrity data", __func__);
 
