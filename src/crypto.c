@@ -178,7 +178,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	struct nyfe_agelas	cipher;
 	u_int8_t		*block;
 	u_int64_t		filelen;
-	int			src, dst, pending;
+	int			src, dst;
 	u_int8_t		seed[NYFE_SEED_LEN];
 	u_int8_t		tag[NYFE_TAG_LEN], expected[NYFE_TAG_LEN];
 
@@ -224,8 +224,13 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 
 	/*
 	 * Read data from the encrypted input, decrypting it as we go.
+	 *
+	 * We hold back up to sizeof(tag) bytes of data as we are
+	 * reading from the source until EOF.
+	 *
+	 * This means we need to make sure the tag remains as the last
+	 * part and is not swallowed by accident.
 	 */
-	pending = 0;
 	filelen = 0;
 	for (;;) {
 		if ((sig = nyfe_signal_pending()) != -1) {
@@ -236,17 +241,15 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 		if ((ret = nyfe_file_read(src, block, BLOCK_SIZE)) == 0)
 			break;
 
-		if (pending) {
+		if (filelen > 0) {
 			nyfe_agelas_decrypt(&cipher, tag, tag, sizeof(tag));
 			nyfe_file_write(dst, tag, sizeof(tag));
-			pending = 0;
 			filelen += sizeof(tag);
 		}
 
 		if (ret < sizeof(tag))
 			fatal("%s: too short of a read", __func__);
 
-		pending = 1;
 		ret -= sizeof(tag);
 		memcpy(tag, &block[ret], sizeof(tag));
 
@@ -259,10 +262,6 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 		nyfe_output("\rworking ... %" PRIu64 " MB",
 		    filelen / 1024 / 1024);
 	}
-
-	/* We must have read a tag. */
-	if (pending != 1)
-		fatal("%s: no pending integrity data", __func__);
 
 	/*
 	 * Add what should be the original file length as
