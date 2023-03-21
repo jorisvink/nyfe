@@ -25,6 +25,7 @@
 /* Apple .. */
 #if defined(__APPLE__)
 #include <libkern/OSByteOrder.h>
+#define htobe32(x)		OSSwapHostToBigInt32(x)
 #define htobe64(x)		OSSwapHostToBigInt64(x)
 #endif
 
@@ -131,7 +132,6 @@ void	nyfe_output(const char *, ...) __attribute__((format (printf, 1, 2)));
 /* src/crypto.c */
 void	nyfe_crypto_decrypt(const char *, const char *, const char *);
 void	nyfe_crypto_encrypt(const char *, const char *, const char *);
-void	nyfe_crypto_init(struct nyfe_agelas *, const void *, size_t);
 
 /* src/file.c */
 u_int64_t	nyfe_file_size(int);

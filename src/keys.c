@@ -252,7 +252,7 @@ key_generate_secret(struct nyfe_agelas *cipher, const u_int8_t *seed,
 	nyfe_kmac256_update(&kdf, salt_prf, KEY_FILE_SALT_LEN);
 	nyfe_kmac256_final(&kdf, okm, sizeof(okm));
 
-	nyfe_crypto_init(cipher, okm, sizeof(okm));
+	nyfe_agelas_init(cipher, okm, sizeof(okm));
 
 	nyfe_zeroize(key, sizeof(key));
 	nyfe_zeroize(okm, sizeof(okm));
@@ -373,7 +373,7 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 	 * The first 32 bytes of the tmp data is used as K for KMAC256
 	 * while the remainder is used as X.
 	 */
-	iter = PASSPHRASE_KDF_MEM_SIZE - 32;
+	iter = htobe32(PASSPHRASE_KDF_MEM_SIZE - 32);
 	nyfe_kmac256_init(&kmac, tmp, 32,
 	    PASSPHRASE_DERIVE_LABEL, sizeof(PASSPHRASE_DERIVE_LABEL) - 1);
 	nyfe_kmac256_update(&kmac, &iter, sizeof(iter));

@@ -51,20 +51,6 @@ static void	crypto_setup(const void *, size_t, const void *, size_t,
 		    const void *, size_t, struct nyfe_agelas *);
 
 /*
- * Initialize and setup the Agelas context using key material from
- * the previously generated OKM.
- */
-void
-nyfe_crypto_init(struct nyfe_agelas *cipher, const void *okm, size_t okm_len)
-{
-	PRECOND(cipher != NULL);
-	PRECOND(okm != NULL);
-	PRECOND(okm_len == NYFE_OKM_LEN);
-
-	nyfe_agelas_init(cipher, okm, NYFE_KEY_LEN);
-}
-
-/*
  * Encrypts the `in` file into `out`.
  */
 void
@@ -339,7 +325,7 @@ crypto_setup(const void *key, size_t key_len, const void *seed,
 	nyfe_zeroize(&kdf, sizeof(kdf));
 
 	/* Setup all crypto contexts. */
-	nyfe_crypto_init(cipher, okm, sizeof(okm));
+	nyfe_agelas_init(cipher, okm, sizeof(okm));
 
 	/* We no longer need any key material now. */
 	nyfe_zeroize(okm, sizeof(okm));
