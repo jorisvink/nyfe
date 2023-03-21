@@ -269,11 +269,11 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 {
 	u_int16_t			*ap;
 	int				sig;
-	u_int32_t			iter;
 	struct nyfe_kmac256		kmac;
 	struct nyfe_sha3		shake;
 	struct nyfe_agelas		stream;
 	size_t				idx, offset;
+	u_int32_t			iter, counter;
 	u_int8_t			*tmp, buf[512];
 
 	PRECOND(passphrase != NULL);
@@ -351,8 +351,9 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 			    PASSPHRASE_KDF_MEM_SIZE - offset);
 		}
 
+		counter = htobe32(iter);
 		nyfe_xof_shake256_init(&shake);
-		nyfe_sha3_update(&shake, &iter, sizeof(iter));
+		nyfe_sha3_update(&shake, &counter, sizeof(counter));
 		nyfe_sha3_update(&shake, &tmp[offset], PASSPHRASE_KDF_STEP_LEN);
 		nyfe_sha3_final(&shake, buf, PASSPHRASE_KDF_STEP_LEN);
 
