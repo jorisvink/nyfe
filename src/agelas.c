@@ -83,6 +83,7 @@ static void	agelas_bytepad(const void *, size_t, u_int8_t *, size_t);
 void
 nyfe_agelas_init(struct nyfe_agelas *ctx, const void *key, size_t key_len)
 {
+	u_int8_t		len;
 	u_int8_t		buf[AGELAS_SPONGE_RATE];
 	u_int8_t		padded[AGELAS_SPONGE_RATE];
 
@@ -99,10 +100,11 @@ nyfe_agelas_init(struct nyfe_agelas *ctx, const void *key, size_t key_len)
 	 * Construct input K that is to be absorbed into the initial state.
 	 *	K = bytepad(len(key) || key || 0x01, 136)
 	 */
-	memcpy(buf, &key_len, sizeof(key_len));
-	memcpy(&buf[sizeof(key_len)], key, key_len);
+	len = key_len;
+	memcpy(buf, &len, sizeof(len));
+	memcpy(&buf[sizeof(len)], key, key_len);
 
-	agelas_bytepad(buf, sizeof(key_len) + key_len, padded, sizeof(padded));
+	agelas_bytepad(buf, sizeof(len) + key_len, padded, sizeof(padded));
 	padded[AGELAS_SPONGE_RATE - 1] = 0x01;
 
 	/* Absorb K into keccak sponge. */
