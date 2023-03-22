@@ -282,10 +282,10 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 }
 
 /*
- * Perform KDF to generate OKM and setup the cipher and kmac contexts
+ * Perform KDF to generate OKM and setup the Agelas cipher context
  * used for confidentiality and integrity protection.
  *
- * Adds the seed and keyID to the kmac context when ready.
+ * Adds the seed and keyID as AAD after setup.
  */
 static void
 crypto_setup(const void *key, size_t key_len, const void *seed,
