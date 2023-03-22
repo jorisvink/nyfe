@@ -346,6 +346,7 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 		 * through the Agelas cipher.
 		 */
 		if ((iter % 2048) == 0) {
+			nyfe_output_spin();
 			nyfe_agelas_encrypt(&stream,
 			    &tmp[offset], &tmp[offset],
 			    PASSPHRASE_KDF_MEM_SIZE - offset);
@@ -359,8 +360,6 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 
 		for (idx = 0; idx < PASSPHRASE_KDF_STEP_LEN; idx++)
 			tmp[offset] ^= buf[idx];
-
-		nyfe_output_spin();
 	}
 
 	/* No longer need any of these intermediates. */
