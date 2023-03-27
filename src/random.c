@@ -32,7 +32,7 @@
  *
  * A temporary Agelas state is initialized with a key derived
  * via KMAC256(K, L)[64] where K is 64 bytes of entropy pulled
- * via * getentropy() and L is 64.
+ * via getentropy() and L is 64.
  *
  * This state is used to generate 1024 of keystream into 'ks' which is
  * what ends up being copied out when random bytes are requested.
