@@ -124,11 +124,7 @@ random_rekey(const void *add, size_t add_len)
 		nyfe_kmac256_update(&kmac, add, add_len);
 	}
 
-	/*
-	 * Derive 56 bytes of okm such that:
-	 *	32 bytes agelas key = okm[0]
-	 *	32 bytes agelas nonce = okm[32]
-	 */
+	/* Derive a key for Agelas. */
 	nyfe_kmac256_final(&kmac, key, sizeof(key));
 	nyfe_mem_zero(&kmac, sizeof(kmac));
 
