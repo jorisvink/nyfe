@@ -64,9 +64,7 @@ and extreme care in handling sensitive data was.
 
 Nyfe has been compiled on OpenBSD, MacOS 13.x and Ubuntu 22.04.
 
-On Linux you will need libbsd-dev installed for readpassphrase().
-
-Otherwise there are no dependencies other than a modern compiler.
+The only real dependency is a decent libc and compiler.
 
 ```
 $ make
