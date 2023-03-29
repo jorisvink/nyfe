@@ -1,7 +1,7 @@
 # Nyfe
 
 A software based file encryption tool where all cryptographic parts
-are based on a single cryptographic function: Keccak-f[1600,24].
+are based on a single cryptographic function: Keccak-p[1600,24].
 
 Nyfe is very minimal and lightweight as it has no external dependencies.
 

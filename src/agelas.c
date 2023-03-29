@@ -57,13 +57,15 @@
  * end of the stream and must fit in a single agelas_bytepad() block.
  *
  * add_aad(aad):
- *	Keccak1600.absorb(bytepad(aad, 136))
+ *	aad = bytepad(aad, 136)
+ *	aad[135] = 0x04
+ *	Keccak1600.absorb(aad)
  *
  * The authentication tag is obtained at the end.
  *
  * authenticate(tag, taglen):
  *	C = bytepad(counter, 136)
- *	C[135] = 0xf0
+ *	C[135] = 0x80
  *	counter = counter + 1
  *	Keccak1600.absorb(C)
  *	Keccak1600.absorb(State)
