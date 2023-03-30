@@ -70,9 +70,6 @@
  */
 struct nyfe_keccak1600 {
 	u_int64_t	A[5][5];
-	u_int64_t	C[5];
-	u_int64_t	D[5];
-	u_int64_t	tmp[5][5];
 
 	size_t		rate;
 	u_int8_t	padding;

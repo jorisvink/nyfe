@@ -31,10 +31,6 @@
 
 static u_int64_t	rotl64(u_int64_t, u_int64_t);
 
-static void	keccak1600_pi(struct nyfe_keccak1600 *);
-static void	keccak1600_rho(struct nyfe_keccak1600 *);
-static void	keccak1600_chi(struct nyfe_keccak1600 *);
-static void	keccak1600_theta(struct nyfe_keccak1600 *);
 static void	keccak1600_rounds(struct nyfe_keccak1600 *);
 
 /*
@@ -190,17 +186,58 @@ nyfe_keccak1600_squeeze(struct nyfe_keccak1600 *ctx, void *buf, size_t len)
 static void
 keccak1600_rounds(struct nyfe_keccak1600 *ctx)
 {
+	int		x, y;
 	size_t		round;
+	u_int64_t	A[5][5], B[5][5], C[5], D[5];
 
 	PRECOND(ctx != NULL);
 
 	for (round = 0; round < 24; round++) {
-		keccak1600_theta(ctx);
-		keccak1600_rho(ctx);
-		keccak1600_pi(ctx);
-		keccak1600_chi(ctx);
+		/* Theta step 1, from chapter 3.2.1. */
+		C[0] = ctx->A[0][0];
+		C[1] = ctx->A[0][1];
+		C[2] = ctx->A[0][2];
+		C[3] = ctx->A[0][3];
+		C[4] = ctx->A[0][4];
 
-		/* Iota */
+		for (y = 1; y < 5; y++) {
+			for (x = 0; x < 5; x++) {
+				C[x] ^= ctx->A[y][x];
+			}
+		}
+
+		/* Theta step 2, from chapter 3.2.1. */
+		for (x = 0; x < 5; x++) {
+			D[x] = C[(x + 4) % 5] ^ rotl64(C[(x + 1) % 5], 1);
+		}
+
+		/*
+		 * Theta step 3, from chapter 3.2.1 in combination
+		 * with the correct Rho shifts from chapter 3.2.2.
+		 */
+		for (y = 0; y < 5; y++) {
+			for (x = 0; x < 5; x++) {
+				A[y][x] = rotl64(ctx->A[y][x] ^ D[x],
+				    rho_offsets[y][x]);
+			}
+		}
+
+		/* Pi step from chapter 3.2.3. */
+		for (y = 0; y < 5; y++) {
+			for (x = 0; x < 5; x++) {
+				B[y][x] = A[x][(x + (3 * y)) % 5];
+			}
+		}
+
+		/* Chi step from chapter 3.2.2. */
+		for (y = 0; y < 5; y++) {
+			for (x = 0; x < 5; x++) {
+				ctx->A[y][x] = B[y][x] ^
+				    (~B[y][(x + 1) % 5] & B[y][(x + 2) % 5]);
+			}
+		}
+
+		/* Iota round constant application. */
 		ctx->A[0][0] ^= iota_rc[round];
 	}
 }
@@ -213,118 +250,4 @@ rotl64(u_int64_t v, u_int64_t b)
 		return (v);
 
 	return ((v << b) | (v >> (64 - b)));
-}
-
-/*
- * The Theta step for the Keccak algorithm.
- */
-static void
-keccak1600_theta(struct nyfe_keccak1600 *ctx)
-{
-	int		y, x;
-
-	PRECOND(ctx != NULL);
-
-	nyfe_mem_zero(ctx->C, sizeof(ctx->C));
-
-	/*
-	 * Theta step 1, from chapter 3.2.1
-	 *	C[x,z]=A[x,0,z] ^ A[x,1,z] ^ A[x,2,z] ^ A[x,3,z] ^ A[x,4,z].
-	 */
-	for (y = 0; y < 5; y++) {
-		for (x = 0; x < 5; x++) {
-			ctx->C[x] ^= ctx->A[y][x];
-		}
-	}
-
-	/*
-	 * Theta step 2, from chapter 3.2.1
-	 *	D[x, z]=C[(x - 1) mod 5, z] ^ C[(x+1) mod 5, (z –1) mod w].
-	 */
-	for (x = 0; x < 5; x++) {
-		ctx->D[x] = ctx->C[(x + 4) % 5] ^
-		    rotl64(ctx->C[(x + 1) % 5], 1);
-	}
-
-	/*
-	 * Theta step 3, from chapter 3.2.1
-	 *	A[x,y,z] = A[x,y,z] ^ D[x,z].
-	 */
-	for (y = 0; y < 5; y++) {
-		for (x = 0; x < 5; x++) {
-			ctx->A[y][x] = ctx->A[y][x] ^ ctx->D[x];
-		}
-	}
-}
-
-/*
- * The Rho step for the Keccak algorithm.
- */
-static void
-keccak1600_rho(struct nyfe_keccak1600 *ctx)
-{
-	int		y, x;
-
-	PRECOND(ctx != NULL);
-
-	/*
-	 * Rho step from chapter 3.2.2
-	 *
-	 * Essentially we rotate the bits in the A matrix based on
-	 * an offset that depends on the x, y coordinates of the lane.
-	 */
-	for (y = 0; y < 5; y++) {
-		for (x = 0; x < 5; x++) {
-			ctx->A[y][x] = rotl64(ctx->A[y][x], rho_offsets[y][x]);
-		}
-	}
-}
-
-/*
- * The Pi step for the Keccak algorithm.
- */
-static void
-keccak1600_pi(struct nyfe_keccak1600 *ctx)
-{
-	int		y, x;
-
-	PRECOND(ctx != NULL);
-
-	memcpy(ctx->tmp, ctx->A, sizeof(ctx->A));
-
-	/*
-	 * Pi step from chapter 3.2.3
-	 *	A[x, y, z]= A[(x + 3y) mod 5, x, z].
-	 */
-	for (y = 0; y < 5; y++) {
-		for (x = 0; x < 5; x++) {
-			ctx->A[y][x] = ctx->tmp[x][(x + (3 * y)) % 5];
-		}
-	}
-}
-
-/*
- * The Chi step for the Keccak algorithm.
- */
-static void
-keccak1600_chi(struct nyfe_keccak1600 *ctx)
-{
-	int		y, x;
-
-	PRECOND(ctx != NULL);
-
-	memcpy(ctx->tmp, ctx->A, sizeof(ctx->A));
-
-	/*
-	 * Chi step from chapter 3.2.3
-	 *	A[x,y,z] = A[x,y,z] ^
-	 *	    ((A[(x+1) mod 5, y, z] ^ 1) . A[(x+2) mod 5, y, z]).
-	 */
-	for (y = 0; y < 5; y++) {
-		for (x = 0; x < 5; x++) {
-			ctx->A[y][x] = ctx->A[y][x] ^
-			    (~ctx->tmp[y][(x + 1) % 5] &
-			    ctx->tmp[y][(x + 2) % 5]);
-		}
-	}
 }
