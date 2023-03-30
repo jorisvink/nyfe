@@ -20,6 +20,7 @@
 #include <sys/queue.h>
 
 #include <fcntl.h>
+#include <inttypes.h>
 #include <limits.h>
 #include <paths.h>
 #include <pwd.h>
@@ -29,12 +30,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "nyfe.h"
 
 static void	sighdlr(int);
 static void	cmd_init(int, char **);
+static void	cmd_test(int, char **);
 static void	cmd_keygen(int, char **);
 static void	cmd_encrypt(int, char **);
 static void	cmd_decrypt(int, char **);
@@ -61,6 +64,7 @@ static const struct {
 	void		(*cb)(int, char **);
 } cmdtab[] = {
 	{ "init",	cmd_init },
+	{ "test",	cmd_test },
 	{ "encrypt",	cmd_encrypt },
 	{ "decrypt",	cmd_decrypt },
 	{ "keygen",	cmd_keygen },
@@ -312,6 +316,7 @@ usage(void)
 	fprintf(stderr, "\tkeyclone - Clone a keyfile\n");
 	fprintf(stderr, "\tkeygen   - Generate a new key file\n");
 	fprintf(stderr, "\tinit     - Set up nyfe for the first time\n");
+	fprintf(stderr, "\ttest     - Performance test (halt with SIGINT)\n");
 
 	exit(1);
 }
@@ -396,6 +401,56 @@ cmd_init(int argc, char **argv)
 	nyfe_key_generate(keyfile, NULL);
 
 	printf("nyfe initialized!\n");
+}
+
+/*
+ * Run performance tests on Agelas.
+ */
+static void
+cmd_test(int argc, char **argv)
+{
+	struct nyfe_agelas	cipher;
+	size_t			total, speed;
+	u_int8_t		key[64], *block;
+	time_t			now, last, start;
+
+	PRECOND(argc >= 0);
+	PRECOND(argv != NULL);
+
+	memset(key, 0, sizeof(key));
+	nyfe_agelas_init(&cipher, key, sizeof(key));
+
+	if ((block = calloc(1, 1024 * 1024)) == NULL)
+		fatal("failed to allocate test buffer");
+
+	last = 0;
+	speed = 0;
+	total = 0;
+
+	time(&start);
+	last = now = start;
+
+	for (;;) {
+		if (nyfe_signal_pending() != -1)
+			break;
+
+		nyfe_agelas_encrypt(&cipher, block, block, 1024 * 1024);
+		total++;
+		speed++;
+
+		time(&now);
+		if ((now - last) >= 1) {
+			printf("%zu MB / sec\n", speed);
+			last = now;
+			speed = 0;
+		}
+	}
+
+	free(block);
+	nyfe_mem_zero(&cipher, sizeof(cipher));
+
+	printf("encrypted %zu MB in %" PRIu64 " seconds\n", total,
+	    (u_int64_t)(now - start));
 }
 
 /*
