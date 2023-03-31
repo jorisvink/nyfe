@@ -186,9 +186,8 @@ nyfe_keccak1600_squeeze(struct nyfe_keccak1600 *ctx, void *buf, size_t len)
 static void
 keccak1600_rounds(struct nyfe_keccak1600 *ctx)
 {
-	int		x, y;
 	size_t		round;
-	u_int64_t	A[5][5], B[5][5], C[5], D[5];
+	u_int64_t	A[5][5], C[5], D[5];
 
 	PRECOND(ctx != NULL);
 
@@ -200,42 +199,104 @@ keccak1600_rounds(struct nyfe_keccak1600 *ctx)
 		C[3] = ctx->A[0][3];
 		C[4] = ctx->A[0][4];
 
-		for (y = 1; y < 5; y++) {
-			for (x = 0; x < 5; x++) {
-				C[x] ^= ctx->A[y][x];
-			}
-		}
+		C[0] ^= ctx->A[1][0];
+		C[1] ^= ctx->A[1][1];
+		C[2] ^= ctx->A[1][2];
+		C[3] ^= ctx->A[1][3];
+		C[4] ^= ctx->A[1][4];
+
+		C[0] ^= ctx->A[2][0];
+		C[1] ^= ctx->A[2][1];
+		C[2] ^= ctx->A[2][2];
+		C[3] ^= ctx->A[2][3];
+		C[4] ^= ctx->A[2][4];
+
+		C[0] ^= ctx->A[3][0];
+		C[1] ^= ctx->A[3][1];
+		C[2] ^= ctx->A[3][2];
+		C[3] ^= ctx->A[3][3];
+		C[4] ^= ctx->A[3][4];
+
+		C[0] ^= ctx->A[4][0];
+		C[1] ^= ctx->A[4][1];
+		C[2] ^= ctx->A[4][2];
+		C[3] ^= ctx->A[4][3];
+		C[4] ^= ctx->A[4][4];
 
 		/* Theta step 2, from chapter 3.2.1. */
-		for (x = 0; x < 5; x++) {
-			D[x] = C[(x + 4) % 5] ^ rotl64(C[(x + 1) % 5], 1);
-		}
+		D[0] = C[4] ^ rotl64(C[1], 1);
+		D[1] = C[0] ^ rotl64(C[2], 1);
+		D[2] = C[1] ^ rotl64(C[3], 1);
+		D[3] = C[2] ^ rotl64(C[4], 1);
+		D[4] = C[3] ^ rotl64(C[0], 1);
 
 		/*
 		 * Theta step 3, from chapter 3.2.1 in combination
 		 * with the correct Rho shifts from chapter 3.2.2.
 		 */
-		for (y = 0; y < 5; y++) {
-			for (x = 0; x < 5; x++) {
-				A[y][x] = rotl64(ctx->A[y][x] ^ D[x],
-				    rho_offsets[y][x]);
-			}
-		}
+		A[0][0] = rotl64(ctx->A[0][0] ^ D[0], rho_offsets[0][0]);
+		A[0][1] = rotl64(ctx->A[0][1] ^ D[1], rho_offsets[0][1]);
+		A[0][2] = rotl64(ctx->A[0][2] ^ D[2], rho_offsets[0][2]);
+		A[0][3] = rotl64(ctx->A[0][3] ^ D[3], rho_offsets[0][3]);
+		A[0][4] = rotl64(ctx->A[0][4] ^ D[4], rho_offsets[0][4]);
 
-		/* Pi step from chapter 3.2.3. */
-		for (y = 0; y < 5; y++) {
-			for (x = 0; x < 5; x++) {
-				B[y][x] = A[x][(x + (3 * y)) % 5];
-			}
-		}
+		A[1][0] = rotl64(ctx->A[1][0] ^ D[0], rho_offsets[1][0]);
+		A[1][1] = rotl64(ctx->A[1][1] ^ D[1], rho_offsets[1][1]);
+		A[1][2] = rotl64(ctx->A[1][2] ^ D[2], rho_offsets[1][2]);
+		A[1][3] = rotl64(ctx->A[1][3] ^ D[3], rho_offsets[1][3]);
+		A[1][4] = rotl64(ctx->A[1][4] ^ D[4], rho_offsets[1][4]);
 
-		/* Chi step from chapter 3.2.2. */
-		for (y = 0; y < 5; y++) {
-			for (x = 0; x < 5; x++) {
-				ctx->A[y][x] = B[y][x] ^
-				    (~B[y][(x + 1) % 5] & B[y][(x + 2) % 5]);
-			}
-		}
+		A[2][0] = rotl64(ctx->A[2][0] ^ D[0], rho_offsets[2][0]);
+		A[2][1] = rotl64(ctx->A[2][1] ^ D[1], rho_offsets[2][1]);
+		A[2][2] = rotl64(ctx->A[2][2] ^ D[2], rho_offsets[2][2]);
+		A[2][3] = rotl64(ctx->A[2][3] ^ D[3], rho_offsets[2][3]);
+		A[2][4] = rotl64(ctx->A[2][4] ^ D[4], rho_offsets[2][4]);
+
+		A[3][0] = rotl64(ctx->A[3][0] ^ D[0], rho_offsets[3][0]);
+		A[3][1] = rotl64(ctx->A[3][1] ^ D[1], rho_offsets[3][1]);
+		A[3][2] = rotl64(ctx->A[3][2] ^ D[2], rho_offsets[3][2]);
+		A[3][3] = rotl64(ctx->A[3][3] ^ D[3], rho_offsets[3][3]);
+		A[3][4] = rotl64(ctx->A[3][4] ^ D[4], rho_offsets[3][4]);
+
+		A[4][0] = rotl64(ctx->A[4][0] ^ D[0], rho_offsets[4][0]);
+		A[4][1] = rotl64(ctx->A[4][1] ^ D[1], rho_offsets[4][1]);
+		A[4][2] = rotl64(ctx->A[4][2] ^ D[2], rho_offsets[4][2]);
+		A[4][3] = rotl64(ctx->A[4][3] ^ D[3], rho_offsets[4][3]);
+		A[4][4] = rotl64(ctx->A[4][4] ^ D[4], rho_offsets[4][4]);
+
+		/*
+		 * The Pi step from chapter 3.2.3 in combination with the
+		 * Chi step from chapter 3.2.2.
+		 */
+		ctx->A[0][0] = A[0][0] ^ (~A[1][1] & A[2][2]);
+		ctx->A[0][1] = A[1][1] ^ (~A[2][2] & A[3][3]);
+		ctx->A[0][2] = A[2][2] ^ (~A[3][3] & A[4][4]);
+		ctx->A[0][3] = A[3][3] ^ (~A[4][4] & A[0][0]);
+		ctx->A[0][4] = A[4][4] ^ (~A[0][0] & A[1][1]);
+
+		ctx->A[1][0] = A[0][3] ^ (~A[1][4] & A[2][0]);
+		ctx->A[1][1] = A[1][4] ^ (~A[2][0] & A[3][1]);
+		ctx->A[1][2] = A[2][0] ^ (~A[3][1] & A[4][2]);
+		ctx->A[1][3] = A[3][1] ^ (~A[4][2] & A[0][3]);
+		ctx->A[1][4] = A[4][2] ^ (~A[0][3] & A[1][4]);
+
+		ctx->A[2][0] = A[0][1] ^ (~A[1][2] & A[2][3]);
+		ctx->A[2][1] = A[1][2] ^ (~A[2][3] & A[3][4]);
+		ctx->A[2][2] = A[2][3] ^ (~A[3][4] & A[4][0]);
+		ctx->A[2][3] = A[3][4] ^ (~A[4][0] & A[0][1]);
+		ctx->A[2][4] = A[4][0] ^ (~A[0][1] & A[1][2]);
+
+		ctx->A[3][0] = A[0][4] ^ (~A[1][0] & A[2][1]);
+		ctx->A[3][1] = A[1][0] ^ (~A[2][1] & A[3][2]);
+		ctx->A[3][2] = A[2][1] ^ (~A[3][2] & A[4][3]);
+		ctx->A[3][3] = A[3][2] ^ (~A[4][3] & A[0][4]);
+		ctx->A[3][4] = A[4][3] ^ (~A[0][4] & A[1][0]);
+
+		ctx->A[4][0] = A[0][2] ^ (~A[1][3] & A[2][4]);
+		ctx->A[4][1] = A[1][3] ^ (~A[2][4] & A[3][0]);
+		ctx->A[4][2] = A[2][4] ^ (~A[3][0] & A[4][1]);
+		ctx->A[4][3] = A[3][0] ^ (~A[4][1] & A[0][2]);
+		ctx->A[4][4] = A[4][1] ^ (~A[0][2] & A[1][3]);
 
 		/* Iota round constant application. */
 		ctx->A[0][0] ^= iota_rc[round];
