@@ -47,6 +47,9 @@
 #define DERIVE_LABEL		"NYFE.KDF"
 #define BLOCK_SIZE		(1024 * 1024 * 4)
 
+static u_int64_t	crypto_size(u_int64_t);
+static const char	*crypto_size_unit(u_int64_t);
+
 static void	crypto_setup(const void *, size_t, const void *, size_t,
 		    const void *, size_t, struct nyfe_agelas *);
 
@@ -124,8 +127,8 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 		nyfe_file_write(dst, block, ret);
 
 		filelen += ret;
-		nyfe_output("\rworking ... %" PRIu64 " MB",
-		    filelen / 1024 / 1024);
+		nyfe_output("\33[K\rworking ... %" PRIu64 " %s",
+		    crypto_size(filelen), crypto_size_unit(filelen));
 	}
 
 	/* No longer need block at this point. */
@@ -245,8 +248,8 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 			filelen += ret;
 		}
 
-		nyfe_output("\rworking ... %" PRIu64 " MB",
-		    filelen / 1024 / 1024);
+		nyfe_output("\33[K\rworking ... %" PRIu64 " %s",
+		    crypto_size(filelen), crypto_size_unit(filelen));
 	}
 
 	/*
@@ -335,4 +338,34 @@ crypto_setup(const void *key, size_t key_len, const void *seed,
 	nyfe_agelas_aad(cipher, id, id_len);
 
 	nyfe_output("done\n");
+}
+
+/*
+ * Returns the file length in the current human readable unit size.
+ */
+static u_int64_t
+crypto_size(u_int64_t length)
+{
+	if (length >= (1 << 20))
+		return (length >> 20);
+
+	if (length >= (1 << 10))
+		return (length >> 10);
+
+	return (length);
+}
+
+/*
+ * Returns the unit to be printed for the current file length.
+ */
+static const char *
+crypto_size_unit(u_int64_t length)
+{
+	if (length >= (1 << 20))
+		return ("MB");
+
+	if (length >= (1 << 10))
+		return ("KB");
+
+	return ("b");
 }
