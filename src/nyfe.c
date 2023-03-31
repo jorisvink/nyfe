@@ -110,14 +110,14 @@ main(int argc, char *argv[])
 	argc--;
 	argv++;
 
+	setup_paths();
+	setup_signals();
+
 	nyfe_selftest_kmac256();
 
 	nyfe_file_init();
 	nyfe_random_init();
 	nyfe_zeroize_init();
-
-	setup_paths();
-	setup_signals();
 
 	cb(argc, argv);
 
@@ -223,6 +223,22 @@ nyfe_read_passphrase(void *buf, size_t len)
 		fatal("tcsetattr: %s", errno_s);
 
 	nyfe_output("\n");
+}
+
+/*
+ * Returns the path to the entropy file location.
+ */
+const char *
+nyfe_entropy_path(void)
+{
+	int		len;
+	static char	path[PATH_MAX];
+
+	len = snprintf(path, sizeof(path), "%s/entropy", homedir);
+	if (len == -1 || (size_t)len >= sizeof(path))
+		fatal("failed to construct path to entropy file");
+
+	return (path);
 }
 
 /*
@@ -369,6 +385,9 @@ usage_init(void)
 	exit(1);
 }
 
+/*
+ * Returns the path to the default key file location.
+ */
 static const char *
 path_default_keyfile(void)
 {

@@ -126,6 +126,8 @@ void	nyfe_read_passphrase(void *, size_t);
 void	fatal(const char *, ...) __attribute__((noreturn));
 void	nyfe_output(const char *, ...) __attribute__((format (printf, 1, 2)));
 
+const char	*nyfe_entropy_path(void);
+
 /* src/crypto.c */
 void	nyfe_crypto_decrypt(const char *, const char *, const char *);
 void	nyfe_crypto_encrypt(const char *, const char *, const char *);

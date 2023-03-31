@@ -22,6 +22,7 @@
 #endif
 
 #include <errno.h>
+#include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -39,10 +40,11 @@
  *
  * After the keystream is generated the state is wiped.
  */
+#define RANDOM_ADD_SIZE		64
 #define RANDOM_KEYSTREAM_LEN	1024
 #define RANDOM_LABEL		"NYFE.RANDOM"
 
-static void		random_rekey(const void *, size_t);
+static void	random_rekey(void);
 
 /* The keystream and number of bytes left of it. */
 size_t					ks_available = 0;
@@ -57,7 +59,7 @@ static u_int32_t			random_setup = 0;
 void
 nyfe_random_init(void)
 {
-	random_rekey(NULL, 0);
+	random_rekey();
 	random_setup = 1;
 }
 
@@ -76,7 +78,7 @@ nyfe_random_bytes(void *buf, size_t len)
 	PRECOND(ks_available <= sizeof(ks));
 
 	if (ks_available == 0)
-		random_rekey(NULL, 0);
+		random_rekey();
 
 	ptr = buf;
 	ksp = &ks[sizeof(ks) - ks_available];
@@ -93,7 +95,7 @@ nyfe_random_bytes(void *buf, size_t len)
 		ks_available -= tocopy;
 
 		if (ks_available == 0) {
-			random_rekey(NULL, 0);
+			random_rekey();
 			ksp = &ks[sizeof(ks) - ks_available];
 		}
 	}
@@ -103,26 +105,37 @@ nyfe_random_bytes(void *buf, size_t len)
  * Helper function that will do the actual rekeying and keystream generation.
  */
 static void
-random_rekey(const void *add, size_t add_len)
+random_rekey(void)
 {
+	int				fd;
+	u_int8_t			len;
 	struct nyfe_kmac256		kmac;
 	struct nyfe_agelas		state;
+	u_int8_t			add[RANDOM_ADD_SIZE];
 	u_int8_t			seed[64], key[NYFE_KEY_LEN];
 
+	/* Load in the entropy file, if its not present, complain. */
+	if ((fd = open(nyfe_entropy_path(), O_RDWR)) == -1) {
+		if (errno != ENOENT)
+			fatal("open(%s): %s", nyfe_entropy_path(), errno_s);
+		nyfe_output("warning: no entropy file present, "
+		    "only system randomness will be used\n");
+	}
+
+	/* Obtain some system entropy. */
 	if (getentropy(seed, sizeof(seed)) == -1)
-		fatal("getentropy: %d", errno);
+		fatal("getentropy: %s", errno_s);
 
 	/*
 	 * Derive key and nonce material using KMAC256 with the seed
-	 * from getentropy() as the key and any additional input data.
+	 * from getentropy() as the key and the additional entropy data.
 	 */
 	nyfe_kmac256_init(&kmac, seed, sizeof(seed),
 	    RANDOM_LABEL, sizeof(RANDOM_LABEL) - 1);
 
-	if (add != NULL && add_len > 0) {
-		nyfe_kmac256_update(&kmac, &add_len, sizeof(add_len));
-		nyfe_kmac256_update(&kmac, add, add_len);
-	}
+	len = RANDOM_ADD_SIZE;
+	nyfe_kmac256_update(&kmac, &len, sizeof(len));
+	nyfe_kmac256_update(&kmac, add, sizeof(add));
 
 	/* Derive a key for Agelas. */
 	nyfe_kmac256_final(&kmac, key, sizeof(key));
@@ -139,4 +152,22 @@ random_rekey(const void *add, size_t add_len)
 
 	/* We don't need state anymore. */
 	nyfe_mem_zero(&state, sizeof(state));
+
+	/*
+	 * Take the first RANDOM_ADD_SIZE bytes of keystream and overwrite
+	 * the eixsting entropy file.
+	 */
+	if (fd != -1) {
+		if (lseek(fd, 0, SEEK_SET) == -1)
+			fatal("lseek: %s", errno_s);
+
+		nyfe_file_write(fd, ks, RANDOM_ADD_SIZE);
+
+		if (close(fd) == -1) {
+			nyfe_output("warning: entropy file close failed (%s)",
+			    errno_s);
+		}
+
+		ks_available -= RANDOM_ADD_SIZE;
+	}
 }
