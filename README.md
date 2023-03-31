@@ -40,8 +40,14 @@ In this case, it will instantiate an Agelas context with keys
 that are derived from a random seed from the system which are
 run through KMAC256.
 
-It then allows random byte generation of up to 1024 bytes before
+It then allows random byte generation of up to 960 bytes before
 rekeying itself.
+
+An 64-byte ondisk entropy file under $HOME/.nyfe/entropy is mixed
+in if available, in addition to system entropy.
+
+The entropy file is rewritten immediately when used.
+You're on your own to generate that file initially.
 
 ## Keys
 
