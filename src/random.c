@@ -119,7 +119,7 @@ random_rekey(void)
 		if (errno != ENOENT)
 			fatal("open(%s): %s", nyfe_entropy_path(), errno_s);
 		nyfe_output("warning: no entropy file present, "
-		    "only system randomness will be used\n");
+		    "only system entropy will be used\n");
 	} else {
 		if (nyfe_file_read(fd, add, sizeof(add)) != sizeof(add))
 			fatal("failed to read entropy file");
