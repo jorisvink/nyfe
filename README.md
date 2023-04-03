@@ -22,7 +22,7 @@ based authenticated stream cipher: Agelas.
 
 Agelas is an experimental AE construction aimed at trying to design
 a simple to understand and easy to implement AE stream cipher based
-on a Sponge function (in this case, Keccak-f[1600,24]).
+on a Sponge function (in this case, Keccak-p[1600,24]).
 
 Lots of inspiration was taken from Keyak and SpongeWrap.
 
