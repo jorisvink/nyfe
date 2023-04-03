@@ -25,6 +25,8 @@
  * Agelas: An experimental, simple and fully authenticated stream cipher
  * based on Keccak1600. This work is based on Keyak, Spongewrap etc.
  *
+ * The Keccak sponge is initialized with a capacity of 512-bits for Agelas.
+ *
  * init(key):
  *	K = bytepad(len(key) || key || 0x01, 136)
  *	State <- Keccak1600.init(K)
