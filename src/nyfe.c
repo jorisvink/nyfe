@@ -16,6 +16,7 @@
 
 #include <sys/param.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/queue.h>
 
@@ -106,6 +107,11 @@ main(int argc, char *argv[])
 
 	if (cb == NULL)
 		usage();
+
+#if !defined(__APPLE__)
+	if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1)
+		fatal("mlock: %s", errno_s);
+#endif
 
 	argc--;
 	argv++;
