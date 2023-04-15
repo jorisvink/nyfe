@@ -339,6 +339,7 @@ usage(void)
 	fprintf(stderr, "\tdecrypt  - Decrypts a file\n");
 	fprintf(stderr, "\tkeyclone - Clone a keyfile\n");
 	fprintf(stderr, "\tkeygen   - Generate a new key file\n");
+	fprintf(stderr, "\tabout    - Nyfe version information\n");
 	fprintf(stderr, "\tinit     - Set up nyfe for the first time\n");
 	fprintf(stderr, "\ttest     - Performance test (halt with SIGINT)\n");
 
