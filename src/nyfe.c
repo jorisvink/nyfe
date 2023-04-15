@@ -39,6 +39,7 @@
 static void	sighdlr(int);
 static void	cmd_init(int, char **);
 static void	cmd_test(int, char **);
+static void	cmd_about(int, char **);
 static void	cmd_keygen(int, char **);
 static void	cmd_encrypt(int, char **);
 static void	cmd_decrypt(int, char **);
@@ -66,6 +67,7 @@ static const struct {
 } cmdtab[] = {
 	{ "init",	cmd_init },
 	{ "test",	cmd_test },
+	{ "about",	cmd_about },
 	{ "encrypt",	cmd_encrypt },
 	{ "decrypt",	cmd_decrypt },
 	{ "keygen",	cmd_keygen },
@@ -476,6 +478,18 @@ cmd_test(int argc, char **argv)
 
 	printf("encrypted %zu MB in %" PRIu64 " seconds\n", total,
 	    (u_int64_t)(now - start));
+}
+
+/*
+ * Print some about information about Nyfe.
+ */
+static void
+cmd_about(int argc, char **argv)
+{
+	PRECOND(argc >= 0);
+	PRECOND(argv != NULL);
+
+	printf("%s, built on %s\n", nyfe_version, nyfe_build_date);
 }
 
 /*

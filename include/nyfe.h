@@ -182,4 +182,8 @@ void	nyfe_selftest_kmac256(void);
 void	nyfe_random_init(void);
 void	nyfe_random_bytes(void *, size_t);
 
+/* version information. */
+extern const char	*nyfe_version;
+extern const char	*nyfe_build_date;
+
 #endif

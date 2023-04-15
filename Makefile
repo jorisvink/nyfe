@@ -4,6 +4,7 @@ CC?=cc
 OBJDIR?=obj
 
 BIN=nyfe
+VERSION=$(OBJDIR)/version.c
 
 CFLAGS+=-std=c99 -pedantic -Wall -Werror -Wstrict-prototypes
 CFLAGS+=-Wmissing-prototypes -Wmissing-declarations -Wshadow
@@ -33,6 +34,7 @@ SRC=	src/nyfe.c \
 	src/selftest.c
 
 OBJS=	$(SRC:src/%.c=$(OBJDIR)/%.o)
+OBJS+=	$(OBJDIR)/version.o
 
 $(BIN): $(OBJDIR) $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $(BIN)
@@ -43,8 +45,29 @@ install: $(BIN)
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)
 
+src/nyfe.c: $(VERSION)
+
 $(OBJDIR)/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(VERSION): $(OBJDIR) force
+	@if [ -d .git ]; then \
+		GIT_REVISION=`git rev-parse --short=8 HEAD`; \
+		GIT_BRANCH=`git rev-parse --abbrev-ref HEAD`; \
+		rm -f $(VERSION); \
+		printf "const char *nyfe_version = \"%s-%s\";\n" \
+		    $$GIT_BRANCH $$GIT_REVISION > $(VERSION); \
+	elif [ -f RELEASE ]; then \
+		printf "const char *nyfe_version = \"%s\";\n" \
+		    `cat RELEASE` > $(VERSION); \
+	else \
+		echo "No version information found (no .git or RELEASE)"; \
+		exit 1; \
+	fi
+	@printf "const char *nyfe_build_date = \"%s\";\n" \
+	    `date +"%Y-%m-%d"` >> $(VERSION);
+
 clean:
 	rm -rf $(OBJDIR) $(BIN)
+
+.PHONY: all clean force
