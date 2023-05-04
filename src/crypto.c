@@ -38,7 +38,7 @@
  *
  *	K = The base symmetrical secret.
  *	X = len(Rs) || Rs || len(Id) || Id
- *	Kc, Iv = KMAC256(K, X, "NYFE.KDF")[88]
+ *	Kc = KMAC256(K, X, "NYFE.KDF")[64]
  *
  * 	ct, tag = Agelas(Kc, pt, aad = Rs || Id || Len)
  *	file = Rs || Id || ct || tag
