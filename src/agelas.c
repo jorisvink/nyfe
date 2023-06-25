@@ -29,7 +29,7 @@
  *
  * init(key):
  *	K_1 = bytepad(len(key) / 2 || key[0..31] || 0x01, 136)
- *	K_2 = bytepad(len(key) / 2 || key[31..64] || 0x02, 136)
+ *	K_2 = bytepad(len(key) / 2 || key[32..64] || 0x02, 136)
  *	State <- Keccak1600.init(K_1)
  *
  * encryption(pt):
