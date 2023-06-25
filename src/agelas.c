@@ -91,8 +91,8 @@ nyfe_agelas_init(struct nyfe_agelas *ctx, const void *key, size_t key_len)
 {
 	u_int8_t		len;
 	const u_int8_t		*ptr;
+	u_int8_t		k1[AGELAS_SPONGE_RATE];
 	u_int8_t		buf[AGELAS_SPONGE_RATE];
-	u_int8_t		padded[AGELAS_SPONGE_RATE];
 
 	PRECOND(ctx != NULL);
 	PRECOND(key != NULL);
@@ -100,8 +100,8 @@ nyfe_agelas_init(struct nyfe_agelas *ctx, const void *key, size_t key_len)
 
 	nyfe_mem_zero(ctx, sizeof(*ctx));
 
+	nyfe_zeroize_register(k1, sizeof(k1));
 	nyfe_zeroize_register(buf, sizeof(buf));
-	nyfe_zeroize_register(padded, sizeof(padded));
 
 	/*
 	 * Construct K_1 and K_2.
@@ -113,12 +113,12 @@ nyfe_agelas_init(struct nyfe_agelas *ctx, const void *key, size_t key_len)
 	memcpy(buf, &len, sizeof(len));
 	memcpy(&buf[sizeof(len)], key, len);
 
-	agelas_bytepad(buf, sizeof(len) + len, padded, sizeof(padded));
-	padded[AGELAS_SPONGE_RATE - 1] = 0x01;
+	agelas_bytepad(buf, sizeof(len) + len, k1, sizeof(k1));
+	k1[AGELAS_SPONGE_RATE - 1] = 0x01;
 
 	/* Absorb K_1 into keccak sponge. */
 	nyfe_keccak1600_init(&ctx->sponge, 0, AGELAS_KECCAK_BITS);
-	nyfe_keccak1600_absorb(&ctx->sponge, padded, sizeof(padded));
+	nyfe_keccak1600_absorb(&ctx->sponge, k1, sizeof(k1));
 
 	/* Prepare K_2. */
 	ptr = key;
@@ -134,8 +134,8 @@ nyfe_agelas_init(struct nyfe_agelas *ctx, const void *key, size_t key_len)
 	ctx->offset = 0;
 	nyfe_keccak1600_squeeze(&ctx->sponge, ctx->state, sizeof(ctx->state));
 
+	nyfe_zeroize(k1, sizeof(k1));
 	nyfe_zeroize(buf, sizeof(buf));
-	nyfe_zeroize(padded, sizeof(padded));
 }
 
 /*
