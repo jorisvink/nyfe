@@ -28,8 +28,9 @@
  * The Keccak sponge is initialized with a capacity of 512-bits for Agelas.
  *
  * init(key):
- *	K = bytepad(len(key) || key || 0x01, 136)
- *	State <- Keccak1600.init(K)
+ *	K_1 = bytepad(len(key) / 2 || key[0..31] || 0x01, 136)
+ *	K_2 = bytepad(len(key) / 2 || key[31..64] || 0x02, 136)
+ *	State <- Keccak1600.init(K_1)
  *
  * encryption(pt):
  *	for each 136 byte block, do
@@ -71,6 +72,7 @@
  *	counter = counter + 1
  *	Keccak1600.absorb(C)
  *	Keccak1600.absorb(State)
+ *	Keccak1600.absorb(K_2)
  *	tag <- Keccak1600.squeeze(taglen)
  */
 
@@ -88,6 +90,7 @@ void
 nyfe_agelas_init(struct nyfe_agelas *ctx, const void *key, size_t key_len)
 {
 	u_int8_t		len;
+	const u_int8_t		*ptr;
 	u_int8_t		buf[AGELAS_SPONGE_RATE];
 	u_int8_t		padded[AGELAS_SPONGE_RATE];
 
@@ -101,19 +104,31 @@ nyfe_agelas_init(struct nyfe_agelas *ctx, const void *key, size_t key_len)
 	nyfe_zeroize_register(padded, sizeof(padded));
 
 	/*
-	 * Construct input K that is to be absorbed into the initial state.
-	 *	K = bytepad(len(key) || key || 0x01, 136)
+	 * Construct K_1 and K_2.
+	 *
+	 * K_1 is absorbed into the initial state.
+	 * K_2 is absorbed into the state before squeezing out the tag.
 	 */
-	len = key_len;
+	len = key_len / 2;
 	memcpy(buf, &len, sizeof(len));
-	memcpy(&buf[sizeof(len)], key, key_len);
+	memcpy(&buf[sizeof(len)], key, len);
 
-	agelas_bytepad(buf, sizeof(len) + key_len, padded, sizeof(padded));
+	agelas_bytepad(buf, sizeof(len) + len, padded, sizeof(padded));
 	padded[AGELAS_SPONGE_RATE - 1] = 0x01;
 
-	/* Absorb K into keccak sponge. */
+	/* Absorb K_1 into keccak sponge. */
 	nyfe_keccak1600_init(&ctx->sponge, 0, AGELAS_KECCAK_BITS);
 	nyfe_keccak1600_absorb(&ctx->sponge, padded, sizeof(padded));
+
+	/* Prepare K_2. */
+	ptr = key;
+	len = key_len / 2;
+	memcpy(buf, &len, sizeof(len));
+	memcpy(&buf[sizeof(len)], &ptr[len], len);
+
+	/* Bytepad K2 into our context for later. */
+	agelas_bytepad(buf, sizeof(len) + len, ctx->k2, sizeof(ctx->k2));
+	ctx->k2[AGELAS_SPONGE_RATE - 1] = 0x02;
 
 	/* Generate first state. */
 	ctx->offset = 0;
@@ -207,7 +222,13 @@ nyfe_agelas_authenticate(struct nyfe_agelas *ctx, u_int8_t *tag, size_t len)
 	PRECOND(tag != NULL);
 	PRECOND(len == NYFE_TAG_LEN);
 
+	/* Absorb last state. */
 	agelas_absorb_state(ctx, 0x80);
+
+	/* Absorb K2 into the state. */
+	nyfe_keccak1600_absorb(&ctx->sponge, ctx->k2, sizeof(ctx->k2));
+
+	/* Now squeeze out the tag. */
 	nyfe_keccak1600_squeeze(&ctx->sponge, tag, len);
 }
 
