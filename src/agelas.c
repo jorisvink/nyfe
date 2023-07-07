@@ -23,7 +23,7 @@
 
 /*
  * Agelas: An experimental, simple and fully authenticated stream cipher
- * based on Keccak1600. This work is based on Keyak, Spongewrap etc.
+ * based on Keccak1600. This work is inspired on Keyak, Spongewrap etc.
  *
  * The Keccak sponge is initialized with a capacity of 512-bits for Agelas.
  *
@@ -42,7 +42,7 @@
  *		State <- Keccak1600.squeeze(136)
  *		for i = 0 -> i = 136, do
  *			ct[i] = pt[i] ^ State[i]
- *			State[i] = State[i] ^ pt[i]
+ *			State[i] = pt[i]
  *
  * decryption(ct):
  *	for each 136 byte block, do
@@ -54,7 +54,7 @@
  *		State <- Keccak1600.squeeze(136)
  *		for i = 0 -> i = 136, do
  *			pt[i] = ct[i] ^ State[i]
- *			State[i] = State[i] ^ pt[i]
+ *			State[i] = pt[i]
  *
  * Additional Authenticated Data may be added at beginning or
  * end of the stream and must fit in a single agelas_bytepad() block.
@@ -162,7 +162,7 @@ nyfe_agelas_encrypt(struct nyfe_agelas *ctx, const void *in,
 			agelas_absorb_state(ctx, 0x01);
 		tmp = src[idx];
 		dst[idx] = tmp ^ ctx->state[ctx->offset];
-		ctx->state[ctx->offset++] ^= tmp;
+		ctx->state[ctx->offset++] = tmp;
 	}
 }
 
@@ -189,7 +189,7 @@ nyfe_agelas_decrypt(struct nyfe_agelas *ctx, const void *in,
 		if (ctx->offset == sizeof(ctx->state))
 			agelas_absorb_state(ctx, 0x01);
 		dst[idx] = src[idx] ^ ctx->state[ctx->offset];
-		ctx->state[ctx->offset++] ^= dst[idx];
+		ctx->state[ctx->offset++] = dst[idx];
 	}
 }
 
@@ -222,13 +222,8 @@ nyfe_agelas_authenticate(struct nyfe_agelas *ctx, u_int8_t *tag, size_t len)
 	PRECOND(tag != NULL);
 	PRECOND(len == NYFE_TAG_LEN);
 
-	/* Absorb last state. */
 	agelas_absorb_state(ctx, 0x80);
-
-	/* Absorb K2 into the state. */
 	nyfe_keccak1600_absorb(&ctx->sponge, ctx->k2, sizeof(ctx->k2));
-
-	/* Now squeeze out the tag. */
 	nyfe_keccak1600_squeeze(&ctx->sponge, tag, len);
 }
 
