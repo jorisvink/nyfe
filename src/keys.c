@@ -330,7 +330,7 @@ key_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 	 * For each iteration:
 	 *	- Grab the access location from ap.
 	 *	- offset = ap * PASSPHRASE_KDF_STEP_LEN
-	 *	- iter % 256 == 0:
+	 *	- iter % 2048 == 0:
 	 *		tmp[offset] <- Agelas(tmp[offset])
 	 *	- buf <- SHAKE256(iteration || tmp[offset)
 	 *	- tmp[offset] ^= buf
