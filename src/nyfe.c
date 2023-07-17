@@ -44,6 +44,7 @@ static void	cmd_keygen(int, char **);
 static void	cmd_encrypt(int, char **);
 static void	cmd_decrypt(int, char **);
 static void	cmd_keyclone(int, char **);
+static void	cmd_prng_test(int, char **);
 
 static void	usage(void) __attribute__((noreturn));
 static void	usage_keygen(void) __attribute__((noreturn));
@@ -72,6 +73,7 @@ static const struct {
 	{ "decrypt",	cmd_decrypt },
 	{ "keygen",	cmd_keygen },
 	{ "keyclone",	cmd_keyclone },
+	{ "prng-test",	cmd_prng_test },
 	{ NULL, NULL },
 };
 
@@ -479,6 +481,23 @@ cmd_test(int argc, char **argv)
 
 	printf("encrypted %zu MB in %" PRIu64 " seconds\n", total,
 	    (u_int64_t)(now - start));
+}
+
+/*
+ * Dump out output from the PRNG.
+ */
+static void
+cmd_prng_test(int argc, char **argv)
+{
+	u_int8_t	data[1024];
+
+	PRECOND(argc >= 0);
+	PRECOND(argv != NULL);
+
+	for (;;) {
+		nyfe_random_bytes(data, sizeof(data));
+		(void)write(STDOUT_FILENO, data, sizeof(data));
+	}
 }
 
 /*
