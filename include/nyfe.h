@@ -50,10 +50,6 @@
 		}							\
 	} while (0)
 
-/* File operations. */
-#define NYFE_FILE_READ			1
-#define NYFE_FILE_CREATE		2
-
 /* Constants for certain primitives. */
 #define NYFE_KEY_ID_LEN		16
 #define NYFE_TAG_LEN		32
@@ -82,15 +78,6 @@ const char	*nyfe_entropy_path(void);
 /* src/crypto.c */
 void	nyfe_crypto_decrypt(const char *, const char *, const char *);
 void	nyfe_crypto_encrypt(const char *, const char *, const char *);
-
-/* src/file.c */
-u_int64_t	nyfe_file_size(int);
-void		nyfe_file_init(void);
-void		nyfe_file_close(int);
-void		nyfe_file_remove_lingering(void);
-int		nyfe_file_open(const char *, int);
-size_t		nyfe_file_read(int, void *, size_t);
-void		nyfe_file_write(int, const void *, size_t);
 
 /* src/keys.c */
 void	nyfe_key_clone(const char *, const char *);

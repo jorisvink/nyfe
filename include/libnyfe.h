@@ -23,6 +23,10 @@
 #define NYFE_KECCAK_1600_MAX_RATE	\
     ((NYFE_KECCAK_1600_RATE - NYFE_KECCAK_1600_MIN_BITS) / 8)
 
+/* File operations. */
+#define NYFE_FILE_READ			1
+#define NYFE_FILE_CREATE		2
+
 /*
  * Our keccak1600 context.
  */
@@ -101,5 +105,14 @@ void	nyfe_kmac256_init(struct nyfe_kmac256 *, const void *, size_t,
 /* src/random.c */
 void	nyfe_random_init(void);
 void	nyfe_random_bytes(void *, size_t);
+
+/* src/file.c */
+u_int64_t	nyfe_file_size(int);
+void		nyfe_file_init(void);
+void		nyfe_file_close(int);
+void		nyfe_file_remove_lingering(void);
+int		nyfe_file_open(const char *, int);
+size_t		nyfe_file_read(int, void *, size_t);
+void		nyfe_file_write(int, const void *, size_t);
 
 #endif

@@ -256,6 +256,7 @@ key_generate_secret(struct nyfe_agelas *cipher, const u_int8_t *seed,
 
 	nyfe_zeroize(key, sizeof(key));
 	nyfe_zeroize(okm, sizeof(okm));
+	nyfe_zeroize(&kdf, sizeof(kdf));
 }
 
 /*

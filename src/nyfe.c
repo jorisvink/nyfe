@@ -496,7 +496,8 @@ cmd_prng_test(int argc, char **argv)
 
 	for (;;) {
 		nyfe_random_bytes(data, sizeof(data));
-		(void)write(STDOUT_FILENO, data, sizeof(data));
+		if (write(STDOUT_FILENO, data, sizeof(data)) == -1)
+			fatal("failed to write to stdout");
 	}
 }
 
