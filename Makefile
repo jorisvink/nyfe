@@ -1,9 +1,11 @@
 # nyfe Makefile
 
 CC?=cc
+AR?=ar
 OBJDIR?=obj
 
 BIN=nyfe
+LIB=libnyfe.a
 VERSION=$(OBJDIR)/version.c
 
 CFLAGS+=-std=c99 -pedantic -Wall -Werror -Wstrict-prototypes
@@ -22,22 +24,34 @@ ifeq ("$(OSNAME)", "linux")
 endif
 
 SRC=	src/nyfe.c \
-	src/agelas.c \
 	src/crypto.c \
+	src/keys.c \
+	src/selftest.c
+
+LIBSRC=	src/agelas.c \
 	src/file.c \
 	src/keccak1600.c \
-	src/keys.c \
 	src/kmac256.c \
 	src/mem.c \
 	src/sha3.c \
-	src/random.c \
-	src/selftest.c
+	src/random.c
+
+SRC+=	$(LIBSRC)
 
 OBJS=	$(SRC:src/%.c=$(OBJDIR)/%.o)
 OBJS+=	$(OBJDIR)/version.o
 
+LIBOBJS=$(LIBSRC:src/%.c=$(OBJDIR)/%.o)
+LIBOBJS+=$(OBJDIR)/version.o
+
 $(BIN): $(OBJDIR) $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $(BIN)
+
+lib:
+	env CFLAGS=-DNYFE_LIBRARY_ONLY=1 $(MAKE) $(LIB)
+
+$(LIB): $(OBJDIR) $(LIBOBJS)
+	$(AR) rcs $(LIB) $(LIBOBJS)
 
 install: $(BIN)
 	install -m 555 $(BIN) /usr/local/bin/$(BIN)

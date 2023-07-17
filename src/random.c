@@ -107,13 +107,16 @@ nyfe_random_bytes(void *buf, size_t len)
 static void
 random_rekey(void)
 {
+#if !defined(NYFE_LIBRARY_ONLY)
 	int				fd;
+#endif
 	u_int8_t			len;
 	struct nyfe_kmac256		kmac;
 	struct nyfe_agelas		state;
 	u_int8_t			add[RANDOM_ADD_SIZE];
 	u_int8_t			seed[64], key[NYFE_KEY_LEN];
 
+#if !defined(NYFE_LIBRARY_ONLY)
 	/* Load in the entropy file, if its not present, complain. */
 	if ((fd = open(nyfe_entropy_path(), O_RDWR)) == -1) {
 		if (errno != ENOENT)
@@ -124,6 +127,7 @@ random_rekey(void)
 		if (nyfe_file_read(fd, add, sizeof(add)) != sizeof(add))
 			fatal("failed to read entropy file");
 	}
+#endif
 
 	/* Obtain some system entropy. */
 	if (getentropy(seed, sizeof(seed)) == -1)
@@ -156,6 +160,7 @@ random_rekey(void)
 	/* We don't need state anymore. */
 	nyfe_mem_zero(&state, sizeof(state));
 
+#if !defined(NYFE_LIBRARY_ONLY)
 	/*
 	 * Take the first RANDOM_ADD_SIZE bytes of keystream and overwrite
 	 * the eixsting entropy file.
@@ -173,4 +178,5 @@ random_rekey(void)
 
 		ks_available -= RANDOM_ADD_SIZE;
 	}
+#endif
 }
