@@ -295,11 +295,18 @@ sighdlr(int sig)
 static void
 sigmemfault(int sig)
 {
-	/* Both of functions call only signal-safe functions. */
+	/*
+	 * Both of these call only signal-safe functions. We do not need
+	 * to block all signals here, we're in a signal handler with
+	 * sa_mask consisting of all signals.
+	 */
 	nyfe_zeroize_all();
 	nyfe_file_remove_lingering();
 
-	(void)write(STDOUT_FILENO, MEMORY_FAULT, sizeof(MEMORY_FAULT) - 1);
+	/* Best effort, some platforms declare write() with warn_unused. */
+	if (write(STDOUT_FILENO, MEMORY_FAULT, sizeof(MEMORY_FAULT) - 1) == -1)
+		;
+
 	exit(1);
 }
 
