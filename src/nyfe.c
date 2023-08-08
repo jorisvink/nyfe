@@ -17,6 +17,7 @@
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/queue.h>
 
@@ -36,7 +37,12 @@
 
 #include "nyfe.h"
 
+#define MEMORY_FAULT	\
+    "nyfe: segmentation error, all sensitive memory has been wiped\n"
+
 static void	sighdlr(int);
+static void	sigmemfault(int);
+
 static void	cmd_init(int, char **);
 static void	cmd_test(int, char **);
 static void	cmd_about(int, char **);
@@ -51,6 +57,7 @@ static void	usage_keygen(void) __attribute__((noreturn));
 static void	usage_encdec(void) __attribute__((noreturn));
 static void	usage_keyclone(void) __attribute__((noreturn));
 
+static void	setup_env(void);
 static void	setup_paths(void);
 static void	setup_signals(void);
 
@@ -112,14 +119,10 @@ main(int argc, char *argv[])
 	if (cb == NULL)
 		usage();
 
-#if !defined(__APPLE__)
-	if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1)
-		fatal("mlock: %s", errno_s);
-#endif
-
 	argc--;
 	argv++;
 
+	setup_env();
 	setup_paths();
 	setup_signals();
 
@@ -288,6 +291,18 @@ sighdlr(int sig)
 	sig_recv = sig;
 }
 
+/* Signal handler for SIGSEGV. */
+static void
+sigmemfault(int sig)
+{
+	/* Both of functions call only signal-safe functions. */
+	nyfe_zeroize_all();
+	nyfe_file_remove_lingering();
+
+	(void)write(STDOUT_FILENO, MEMORY_FAULT, sizeof(MEMORY_FAULT) - 1);
+	exit(1);
+}
+
 /* Setup all relevant signals to call sighldr(). */
 static void
 setup_signals(void)
@@ -295,6 +310,7 @@ setup_signals(void)
 	struct sigaction	sa;
 
 	memset(&sa, 0, sizeof(sa));
+
 	sa.sa_handler = sighdlr;
 
 	if (sigfillset(&sa.sa_mask) == -1)
@@ -308,6 +324,31 @@ setup_signals(void)
 		fatal("sigaction: %s", errno_s);
 	if (sigaction(SIGINT, &sa, NULL) == -1)
 		fatal("sigaction: %s", errno_s);
+
+	sa.sa_handler = sigmemfault;
+
+	if (sigaction(SIGSEGV, &sa, NULL) == -1)
+		fatal("sigaction: %s", errno_s);
+}
+
+/*
+ * Setup operational environment to our liking.
+ */
+static void
+setup_env(void)
+{
+	struct rlimit		rlim;
+
+#if !defined(__APPLE__)
+	if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1)
+		fatal("mlock: %s", errno_s);
+#endif
+
+	rlim.rlim_cur = 0;
+	rlim.rlim_max = 0;
+
+	if (setrlimit(RLIMIT_CORE, &rlim) == -1)
+		fatal("setrlimit(RLIMIT_CORE): %s", errno_s);
 }
 
 /*
