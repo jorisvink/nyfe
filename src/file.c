@@ -92,8 +92,9 @@ nyfe_file_open(const char *path, int which)
 		if (!S_ISREG(st.st_mode))
 			fatal("%s: not a file", path);
 	} else {
-		if (stat(path, &st) != -1)
-			fatal("%s: already exists", path);
+		if ((fd = open(path,
+		    O_CREAT | O_EXCL | O_WRONLY | O_TRUNC, 0500)) == -1)
+			fatal("failed to open '%s': %s", path, errno_s);
 
 		if ((file = calloc(1, sizeof(*file))) == NULL)
 			fatal("failed to allocate file structure");
@@ -101,12 +102,9 @@ nyfe_file_open(const char *path, int which)
 		if ((file->path = strdup(path)) == NULL)
 			fatal("failed to copy file path");
 
-		LIST_INSERT_HEAD(&files, file, list);
-
-		if ((fd = open(path, O_CREAT | O_WRONLY | O_TRUNC, 0500)) == -1)
-			fatal("failed to open '%s': %s", path, errno_s);
-
 		file->fd = fd;
+
+		LIST_INSERT_HEAD(&files, file, list);
 	}
 
 	return (fd);
