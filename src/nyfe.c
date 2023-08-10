@@ -336,6 +336,15 @@ setup_signals(void)
 
 	if (sigaction(SIGSEGV, &sa, NULL) == -1)
 		fatal("sigaction: %s", errno_s);
+
+	/* Block all other signals from being delivered. */
+	sigdelset(&sa.sa_mask, SIGHUP);
+	sigdelset(&sa.sa_mask, SIGINT);
+	sigdelset(&sa.sa_mask, SIGQUIT);
+	sigdelset(&sa.sa_mask, SIGTERM);
+	sigdelset(&sa.sa_mask, SIGSEGV);
+
+	(void)sigprocmask(SIG_BLOCK, &sa.sa_mask, NULL);
 }
 
 /*
