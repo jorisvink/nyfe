@@ -163,7 +163,7 @@ random_rekey(void)
 #if !defined(NYFE_LIBRARY_ONLY)
 	/*
 	 * Take the first RANDOM_ADD_SIZE bytes of keystream and overwrite
-	 * the eixsting entropy file.
+	 * the existing entropy file.
 	 */
 	if (fd != -1) {
 		if (lseek(fd, 0, SEEK_SET) == -1)
