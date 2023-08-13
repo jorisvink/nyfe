@@ -284,7 +284,7 @@ fatal(const char *fmt, ...)
 	exit(1);
 }
 
-/* Signal handler callback, install belowed via sigaction(). */
+/* Signal handler callback, install below via sigaction(). */
 static void
 sighdlr(int sig)
 {
