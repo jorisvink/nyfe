@@ -64,9 +64,12 @@
  *	aad[135] = 0x04
  *	Keccak1600.absorb(aad)
  *
- * The authentication tag is obtained at the end.
+ * The authentication tag is obtained at the end. Before this tag is
+ * calculated the number of data handled is automatically absorbed as AAD.
  *
  * authenticate(tag, taglen):
+ *	L = bytepad(length, 136)
+ *	Keccak1600.absorb(L)
  *	C = bytepad(counter, 136)
  *	C[135] = 0x80
  *	counter = counter + 1
@@ -164,6 +167,8 @@ nyfe_agelas_encrypt(struct nyfe_agelas *ctx, const void *in,
 		dst[idx] = tmp ^ ctx->state[ctx->offset];
 		ctx->state[ctx->offset++] = tmp;
 	}
+
+	ctx->length += len;
 }
 
 /*
@@ -191,6 +196,8 @@ nyfe_agelas_decrypt(struct nyfe_agelas *ctx, const void *in,
 		dst[idx] = src[idx] ^ ctx->state[ctx->offset];
 		ctx->state[ctx->offset++] = dst[idx];
 	}
+
+	ctx->length += len;
 }
 
 /*
@@ -218,9 +225,14 @@ nyfe_agelas_aad(struct nyfe_agelas *ctx, const void *data, size_t len)
 void
 nyfe_agelas_authenticate(struct nyfe_agelas *ctx, u_int8_t *tag, size_t len)
 {
+	u_int64_t	length;
+
 	PRECOND(ctx != NULL);
 	PRECOND(tag != NULL);
 	PRECOND(len == NYFE_TAG_LEN);
+
+	length = htobe64(ctx->length);
+	nyfe_agelas_aad(ctx, &length, sizeof(length));
 
 	agelas_absorb_state(ctx, 0x80);
 	nyfe_keccak1600_absorb(&ctx->sponge, ctx->k2, sizeof(ctx->k2));

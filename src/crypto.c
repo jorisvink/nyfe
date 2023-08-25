@@ -135,11 +135,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	nyfe_mem_zero(block, BLOCK_SIZE);
 	free(block);
 
-	/* Add the original file length as additional authenticated data. */
-	filelen = htobe64(filelen);
-	nyfe_agelas_aad(&cipher, &filelen, sizeof(filelen));
-
-	/* Finalize integrity protection and write the tag to the file. */
+	/* Authenticate all data (automatically includes the file length). */
 	nyfe_agelas_authenticate(&cipher, tag, sizeof(tag));
 	nyfe_file_write(dst, tag, sizeof(tag));
 
@@ -252,20 +248,13 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 		    crypto_size(filelen), crypto_size_unit(filelen));
 	}
 
-	/*
-	 * Add what should be the original file length as
-	 * additional authenticated data.
-	 */
-	filelen = htobe64(filelen);
-	nyfe_agelas_aad(&cipher, &filelen, sizeof(filelen));
-
 	/* No longer needed at this point. */
 	nyfe_mem_zero(block, BLOCK_SIZE);
 	free(block);
 
 	/*
-	 * Finalize the integrity protection and compare the
-	 * expected tag vs the one obtained from the file.
+	 * Authenticate all data (automatically includes the file length)
+	 * and compare the expected tag vs the one obtained from the file.
 	 */
 	nyfe_agelas_authenticate(&cipher, expected, sizeof(expected));
 	nyfe_zeroize(&cipher, sizeof(cipher));
