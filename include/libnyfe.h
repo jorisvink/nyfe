@@ -61,7 +61,8 @@ struct nyfe_kmac256 {
 struct nyfe_agelas {
 	struct nyfe_keccak1600	sponge;
 	size_t			offset;
-	u_int64_t		length;
+	u_int64_t		clen;
+	u_int64_t		alen;
 	u_int64_t		counter;
 	u_int8_t		k2[136];
 	u_int8_t		state[136];

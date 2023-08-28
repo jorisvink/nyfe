@@ -29,7 +29,7 @@
  *
  * init(key):
  *	K_1 = bytepad(len(key) / 2 || key[0..31] || 0x01, 136)
- *	K_2 = bytepad(len(key) / 2 || key[32..64] || 0x02, 136)
+ *	K_2 = bytepad(len(key) / 2 || key[32..63] || 0x02, 136)
  *	State <- Keccak1600.init(K_1)
  *
  * encryption(pt):
@@ -43,6 +43,7 @@
  *		for i = 0 -> i = 136, do
  *			ct[i] = pt[i] ^ State[i]
  *			State[i] = pt[i]
+ *		clen += len(pt)
  *
  * decryption(ct):
  *	for each 136 byte block, do
@@ -55,20 +56,28 @@
  *		for i = 0 -> i = 136, do
  *			pt[i] = ct[i] ^ State[i]
  *			State[i] = pt[i]
+ *		clen += len(ct)
  *
- * Additional Authenticated Data may be added at beginning or
- * end of the stream and must fit in a single agelas_bytepad() block.
+ * Additional Authenticated Data may be added at any time as long as this
+ * matches in both the encryption and decryption process.
+ *
+ * Each AAD call must fit in a single agelas_bytepad() block.
  *
  * add_aad(aad):
  *	aad = bytepad(aad, 136)
  *	aad[135] = 0x04
  *	Keccak1600.absorb(aad)
+ *	alen += len(aad)
  *
- * The authentication tag is obtained at the end. Before this tag is
- * calculated the number of data handled is automatically absorbed as AAD.
+ * The authentication tag is obtained at the end. The authentication step
+ * includes the length of the AAD and data operated on.
  *
  * authenticate(tag, taglen):
- *	L = bytepad(length, 136)
+ *	L = bytepad(alen, 136)
+ *	L[135] = 0x08
+ *	Keccak1600.absorb(L)
+ *	L = bytepad(clen, 136)
+ *	L[135] = 0x08
  *	Keccak1600.absorb(L)
  *	C = bytepad(counter, 136)
  *	C[135] = 0x80
@@ -81,7 +90,7 @@
 
 #define AGELAS_KECCAK_BITS	512
 #define AGELAS_SPONGE_RATE	136
-#define AGELAS_ABSORB_LEN	(AGELAS_SPONGE_RATE - 2)
+#define AGELAS_ABSORB_LEN	(AGELAS_SPONGE_RATE - 4)
 
 static void	agelas_absorb_state(struct nyfe_agelas *, u_int8_t);
 static void	agelas_bytepad(const void *, size_t, u_int8_t *, size_t);
@@ -168,7 +177,7 @@ nyfe_agelas_encrypt(struct nyfe_agelas *ctx, const void *in,
 		ctx->state[ctx->offset++] = tmp;
 	}
 
-	ctx->length += len;
+	ctx->clen += len;
 }
 
 /*
@@ -197,12 +206,12 @@ nyfe_agelas_decrypt(struct nyfe_agelas *ctx, const void *in,
 		ctx->state[ctx->offset++] = dst[idx];
 	}
 
-	ctx->length += len;
+	ctx->clen += len;
 }
 
 /*
  * Add additional authenticated data into the Agelas context.
- * The data its length must be 0 < len <= 133.
+ * The data its length must be 0 < len <= 132.
  */
 void
 nyfe_agelas_aad(struct nyfe_agelas *ctx, const void *data, size_t len)
@@ -211,28 +220,38 @@ nyfe_agelas_aad(struct nyfe_agelas *ctx, const void *data, size_t len)
 
 	PRECOND(ctx != NULL);
 	PRECOND(data != NULL);
-	PRECOND(len <= AGELAS_ABSORB_LEN - 1);
+	PRECOND(len <= AGELAS_ABSORB_LEN - 2);
 
 	agelas_bytepad(data, len, buf, sizeof(buf));
 	buf[AGELAS_SPONGE_RATE - 1] = 0x04;
-
 	nyfe_keccak1600_absorb(&ctx->sponge, buf, sizeof(buf));
+
+	ctx->alen += len;
 }
 
 /*
- * Obtain the tag from the Agelas context.
+ * Obtain the tag from the Agelas context after also including the
+ * aad length and data length.
  */
 void
 nyfe_agelas_authenticate(struct nyfe_agelas *ctx, u_int8_t *tag, size_t len)
 {
 	u_int64_t	length;
+	u_int8_t	buf[AGELAS_SPONGE_RATE];
 
 	PRECOND(ctx != NULL);
 	PRECOND(tag != NULL);
 	PRECOND(len == NYFE_TAG_LEN);
 
-	length = htobe64(ctx->length);
-	nyfe_agelas_aad(ctx, &length, sizeof(length));
+	length = htobe64(ctx->alen);
+	agelas_bytepad(&length, sizeof(length), buf, sizeof(buf));
+	buf[AGELAS_SPONGE_RATE - 1] = 0x08;
+	nyfe_keccak1600_absorb(&ctx->sponge, buf, sizeof(buf));
+
+	length = htobe64(ctx->clen);
+	agelas_bytepad(&length, sizeof(length), buf, sizeof(buf));
+	buf[AGELAS_SPONGE_RATE - 1] = 0x08;
+	nyfe_keccak1600_absorb(&ctx->sponge, buf, sizeof(buf));
 
 	agelas_absorb_state(ctx, 0x80);
 	nyfe_keccak1600_absorb(&ctx->sponge, ctx->k2, sizeof(ctx->k2));
@@ -263,7 +282,7 @@ agelas_absorb_state(struct nyfe_agelas *ctx, u_int8_t tag)
 }
 
 /*
- * Helper function to bytepad() the given input to AGELAS_SPONGE_RATE bytes.
+ * Helper function to bytepad() the given input to one AGELAS_SPONGE_RATE bytes.
  */
 static void
 agelas_bytepad(const void *in, size_t inlen, u_int8_t *out, size_t outlen)
@@ -276,6 +295,8 @@ agelas_bytepad(const void *in, size_t inlen, u_int8_t *out, size_t outlen)
 	nyfe_mem_zero(out, outlen);
 	out[0] = 0x01;
 	out[1] = AGELAS_SPONGE_RATE;
+	out[2] = 0x01;
+	out[3] = (u_int8_t)inlen;
 
-	memcpy(&out[2], in, inlen);
+	memcpy(&out[4], in, inlen);
 }
