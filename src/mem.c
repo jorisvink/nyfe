@@ -101,6 +101,30 @@ nyfe_zeroize(void *ptr, size_t len)
 }
 
 /*
+ * Do a byte for byte memory copy. We build with -fno-builtin such that
+ * the compiler does not decide to optimize this using potentially wider
+ * registers. You probably want to verify that this holds on whatever
+ * platform you end up using this on.
+ */
+void
+nyfe_memcpy(void *dst, const void *src, size_t len)
+{
+	size_t			idx;
+	const u_int8_t		*in;
+	u_int8_t		*out;
+
+	PRECOND(dst != NULL);
+	PRECOND(src != NULL);
+	PRECOND(len > 0);
+
+	in = src;
+	out = dst;
+
+	for (idx = 0; idx < len; idx++)
+		out[idx] = in[idx];
+}
+
+/*
  * Poor mans memset() that isn't optimized away on the platforms I use it on.
  *
  * If you build this on something and don't test that it actually clears the

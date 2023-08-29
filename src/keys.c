@@ -168,8 +168,8 @@ nyfe_key_generate(const char *file, struct nyfe_key *curkey)
 		nyfe_random_bytes(key.data, sizeof(key.data));
 		nyfe_random_init();
 	} else {
-		memcpy(key.id, curkey->id, sizeof(curkey->id));
-		memcpy(key.data, curkey->data, sizeof(curkey->data));
+		nyfe_memcpy(key.id, curkey->id, sizeof(curkey->id));
+		nyfe_memcpy(key.data, curkey->data, sizeof(curkey->data));
 	}
 
 	/* Generate random seed and derive key material for this file. */

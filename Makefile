@@ -12,6 +12,7 @@ CFLAGS+=-std=c99 -pedantic -Wall -Werror -Wstrict-prototypes
 CFLAGS+=-Wmissing-prototypes -Wmissing-declarations -Wshadow
 CFLAGS+=-Wpointer-arith -Wcast-qual -Wsign-compare -O2
 CFLAGS+=-fstack-protector-all -Wtype-limits -fno-common -Iinclude
+CFLAGS+=-fno-builtin
 
 ifeq ("$(SANITIZE)", "1")
 	CFLAGS+=-fsanitize=address,undefined

@@ -85,7 +85,7 @@ nyfe_random_bytes(void *buf, size_t len)
 
 	while (len > 0) {
 		tocopy = MIN(ks_available, len);
-		memcpy(ptr, ksp, tocopy);
+		nyfe_memcpy(ptr, ksp, tocopy);
 		nyfe_mem_zero(ksp, tocopy);
 
 		ptr += tocopy;

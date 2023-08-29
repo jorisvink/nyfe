@@ -208,7 +208,7 @@ kmac256_encode_string(const void *in, size_t inlen, u_int8_t *out,
 	}
 
 	if (in != NULL)
-		memcpy(&out[1 + count], in, inlen);
+		nyfe_memcpy(&out[1 + count], in, inlen);
 
 	return (total);
 }
@@ -231,5 +231,5 @@ kmac256_bytepad(const void *in, size_t inlen, u_int8_t *out, size_t outlen)
 	out[0] = 0x01;
 	out[1] = KMAC256_KECCAK_RATE;
 
-	memcpy(&out[2], in, inlen);
+	nyfe_memcpy(&out[2], in, inlen);
 }

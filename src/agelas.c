@@ -122,8 +122,8 @@ nyfe_agelas_init(struct nyfe_agelas *ctx, const void *key, size_t key_len)
 	 * K_2 is absorbed into the state before squeezing out the tag.
 	 */
 	len = key_len / 2;
-	memcpy(buf, &len, sizeof(len));
-	memcpy(&buf[sizeof(len)], key, len);
+	nyfe_memcpy(buf, &len, sizeof(len));
+	nyfe_memcpy(&buf[sizeof(len)], key, len);
 
 	agelas_bytepad(buf, sizeof(len) + len, k1, sizeof(k1));
 	k1[AGELAS_SPONGE_RATE - 1] = 0x01;
@@ -135,8 +135,8 @@ nyfe_agelas_init(struct nyfe_agelas *ctx, const void *key, size_t key_len)
 	/* Prepare K_2. */
 	ptr = key;
 	len = key_len / 2;
-	memcpy(buf, &len, sizeof(len));
-	memcpy(&buf[sizeof(len)], &ptr[len], len);
+	nyfe_memcpy(buf, &len, sizeof(len));
+	nyfe_memcpy(&buf[sizeof(len)], &ptr[len], len);
 
 	/* Bytepad K2 into our context for later. */
 	agelas_bytepad(buf, sizeof(len) + len, ctx->k2, sizeof(ctx->k2));
@@ -298,5 +298,5 @@ agelas_bytepad(const void *in, size_t inlen, u_int8_t *out, size_t outlen)
 	out[2] = 0x01;
 	out[3] = (u_int8_t)inlen;
 
-	memcpy(&out[4], in, inlen);
+	nyfe_memcpy(&out[4], in, inlen);
 }

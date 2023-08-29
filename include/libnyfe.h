@@ -81,6 +81,7 @@ void	nyfe_zeroize_init(void);
 void	nyfe_zeroize(void *, size_t);
 void	nyfe_mem_zero(void *, size_t);
 void	nyfe_zeroize_register(void *, size_t);
+void	nyfe_memcpy(void *, const void *, size_t);
 int	nyfe_mem_cmp(const void *, const void *, size_t);
 
 /* src/keccak1600.c */
