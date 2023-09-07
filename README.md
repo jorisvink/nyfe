@@ -131,7 +131,8 @@ $ cat myarchive.nyfe | nyfe decrypt -f $HOME/.nyfe/different.key myarchive.tar
 ```
 
 When decrypting Nyfe will refuse to output decrypted data to stdout since
-that is a security risk as the data output is not yet verified.
+that is a security risk as the data output is not yet verified and Nyfe does
+not do chunks or intermediate tags.
 
 # Defaults
 
