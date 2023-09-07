@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Joris Vink <joris@coma.one>
+ * Copyright (c) 2023 Joris Vink <joris@sanctorum.se>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
