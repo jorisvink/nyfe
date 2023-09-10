@@ -199,6 +199,7 @@ input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
 	const char	*errstr;
 
 	*msg = NULL;
+	*msglen = 0;
 
 	if ((buf = malloc(INBUFLEN)) == NULL)
 		fatal("malloc failed");
