@@ -24,6 +24,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#if defined(__linux__)
+#include <bsd/stdlib.h>
+#endif
+
 #include "libnyfe.h"
 
 #define MONTE_COUNT		100

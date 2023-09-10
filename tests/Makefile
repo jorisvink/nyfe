@@ -21,6 +21,7 @@ endif
 OSNAME=$(shell uname -s | sed -e 's/[-_].*//g' | tr A-Z a-z)
 ifeq ("$(OSNAME)", "linux")
 	CFLAGS+=-D_GNU_SOURCE=1 -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+	LDFLAGS+=-lbsd
 endif
 
 SRC=	sha3_tests.c
