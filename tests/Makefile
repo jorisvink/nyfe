@@ -13,10 +13,10 @@ CFLAGS+=-Wpointer-arith -Wcast-qual -Wsign-compare -O2
 CFLAGS+=-fstack-protector-all -Wtype-limits -fno-common -I../include
 CFLAGS+=-fno-builtin -g
 
-#ifeq ("$(SANITIZE)", "1")
+ifeq ("$(SANITIZE)", "1")
 	CFLAGS+=-fsanitize=address,undefined
 	LDFLAGS+=-fsanitize=address,undefined
-#endif
+endif
 
 OSNAME=$(shell uname -s | sed -e 's/[-_].*//g' | tr A-Z a-z)
 ifeq ("$(OSNAME)", "linux")
@@ -30,7 +30,7 @@ OBJS=	$(SRC:%.c=$(OBJDIR)/%.o)
 $(BIN): $(OBJDIR) $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $(BIN) $(LIB)
 
-tests: $(BIN)
+keccak-tests: $(BIN)
 	./sha3_tests -c 256 sha-3bytetestvectors/SHA3_256LongMsg.rsp
 	./sha3_tests -c 256 sha-3bytetestvectors/SHA3_256ShortMsg.rsp
 	./sha3_tests -c 512 sha-3bytetestvectors/SHA3_512LongMsg.rsp

@@ -57,6 +57,9 @@ $(LIB): $(OBJDIR) $(LIBOBJS)
 install: $(BIN)
 	install -m 555 $(BIN) /usr/local/bin/$(BIN)
 
+keccak-tests: lib
+	$(MAKE) -C tests keccak-tests
+
 $(OBJDIR):
 	@mkdir -p $(OBJDIR)
 
@@ -84,5 +87,6 @@ $(VERSION): $(OBJDIR) force
 
 clean:
 	rm -rf $(OBJDIR) $(BIN)
+	$(MAKE) -C tests clean
 
 .PHONY: all clean force
