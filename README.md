@@ -77,6 +77,20 @@ $ make
 # make install
 ```
 
+# Tests
+
+Nyfe includes the NIST SHA3 tests for SHA3-256 and SHA3-512.
+
+You can run them on your machine by invoking the right target.
+
+```
+$ make clean
+$ make keccak-tests
+```
+
+The inclusion of these tests are to verify that the underlying
+Keccak-f[1600,24] implementation is working correctly.
+
 Usage
 -----
 
