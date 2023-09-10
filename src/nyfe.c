@@ -510,7 +510,6 @@ cmd_test(int argc, char **argv)
 	if ((block = calloc(1, 1024 * 1024)) == NULL)
 		fatal("failed to allocate test buffer");
 
-	last = 0;
 	speed = 0;
 	total = 0;
 
