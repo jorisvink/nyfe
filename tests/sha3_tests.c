@@ -203,8 +203,10 @@ input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
 	if ((buf = malloc(INBUFLEN)) == NULL)
 		fatal("malloc failed");
 
-	if (input_read_line(fp, "Len = ", buf, INBUFLEN) == -1)
+	if (input_read_line(fp, "Len = ", buf, INBUFLEN) == -1) {
+		free(buf);
 		return (-1);
+	}
 
 	length = strtonum(buf, 0, UINT_MAX, &errstr);
 	if (errstr != NULL)
@@ -212,8 +214,10 @@ input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
 
 	length = length / 8;
 
-	if (input_read_line(fp, "Msg = ", buf, INBUFLEN) == -1)
+	if (input_read_line(fp, "Msg = ", buf, INBUFLEN) == -1) {
+		free(buf);
 		return (-1);
+	}
 
 	if (length > 0) {
 		input_hex2bin(buf, msg, msglen);
@@ -221,8 +225,10 @@ input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
 			fatal("message length is incorrect");
 	}
 
-	if (input_read_line(fp, "MD = ", buf, INBUFLEN) == -1)
+	if (input_read_line(fp, "MD = ", buf, INBUFLEN) == -1) {
+		free(buf);
 		return (-1);
+	}
 
 	input_hex2bin(buf, md, mdlen);
 
@@ -241,8 +247,10 @@ input_get_monte(FILE *fp, u_int8_t **seed, size_t *seedlen,
 	if ((buf = malloc(INBUFLEN)) == NULL)
 		fatal("malloc failed");
 
-	if (input_read_line(fp, "Seed = ", buf, INBUFLEN) == -1)
+	if (input_read_line(fp, "Seed = ", buf, INBUFLEN) == -1) {
+		free(buf);
 		return (-1);
+	}
 
 	input_hex2bin(buf, seed, seedlen);
 
