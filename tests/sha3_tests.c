@@ -33,7 +33,7 @@
 #define MONTE_COUNT		100
 #define	INBUFLEN		(1024 * 1024)
 
-void	fatal(const char *, ...);
+void	fatal(const char *, ...) __attribute__((noreturn));
 void	test_input(const char *, int, int);
 
 void	input_hex2bin(char *, u_int8_t **, size_t *);
