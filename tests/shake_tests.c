@@ -358,7 +358,7 @@ cleanup:
 
 	if (ret == -1) {
 		free(*seed);
-		seed = NULL;
+		*seed = NULL;
 
 		for (idx = 0; idx < MONTE_COUNT; idx++)
 			free(mds[idx]);
