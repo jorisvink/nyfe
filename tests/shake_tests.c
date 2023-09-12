@@ -250,20 +250,21 @@ int
 input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
     u_int8_t **md, size_t *mdlen)
 {
+	int		ret;
 	char		*buf;
 	size_t		length;
 	const char	*errstr;
 
+	ret = -1;
+	*md = NULL;
 	*msg = NULL;
 	*msglen = 0;
 
 	if ((buf = malloc(INBUFLEN)) == NULL)
 		fatal("malloc failed");
 
-	if (input_read_line(fp, "Len = ", buf, INBUFLEN) == -1) {
-		free(buf);
-		return (-1);
-	}
+	if (input_read_line(fp, "Len = ", buf, INBUFLEN) == -1)
+		goto cleanup;
 
 	length = strtonum(buf, 0, UINT_MAX, &errstr);
 	if (errstr != NULL)
@@ -271,10 +272,8 @@ input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
 
 	length = length / 8;
 
-	if (input_read_line(fp, "Msg = ", buf, INBUFLEN) == -1) {
-		free(buf);
-		return (-1);
-	}
+	if (input_read_line(fp, "Msg = ", buf, INBUFLEN) == -1)
+		goto cleanup;
 
 	if (length > 0) {
 		input_hex2bin(buf, msg, msglen);
@@ -282,16 +281,23 @@ input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
 			fatal("message length is incorrect");
 	}
 
-	if (input_read_line(fp, "Output = ", buf, INBUFLEN) == -1) {
-		free(buf);
-		return (-1);
-	}
+	if (input_read_line(fp, "Output = ", buf, INBUFLEN) == -1)
+		goto cleanup;
 
+	ret = 0;
 	input_hex2bin(buf, md, mdlen);
+
+cleanup:
+	if (ret == -1) {
+		free(*md);
+		free(*msg);
+		*md = NULL;
+		*msg = NULL;
+	}
 
 	free(buf);
 
-	return (0);
+	return (ret);
 }
 
 /*
@@ -302,30 +308,32 @@ int
 input_get_monte(FILE *fp, u_int8_t **seed, size_t *seedlen,
     u_int8_t **mds, size_t *lengths, size_t expected)
 {
+	int		ret;
 	char		*buf;
 	const char	*errstr;
 	size_t		idx, digestlen;
 
+	ret = -1;
+	buf = NULL;
+	*seed = NULL;
+
+	for (idx = 0; idx < MONTE_COUNT; idx++)
+		mds[idx] = NULL;
+
 	if ((buf = malloc(INBUFLEN)) == NULL)
 		fatal("malloc failed");
 
-	if (input_read_line(fp, "Msg = ", buf, INBUFLEN) == -1) {
-		free(buf);
-		return (-1);
-	}
+	if (input_read_line(fp, "Msg = ", buf, INBUFLEN) == -1)
+		goto cleanup;
 
 	input_hex2bin(buf, seed, seedlen);
 
 	for (idx = 0; idx < MONTE_COUNT; idx++) {
-		if (input_read_line(fp, "COUNT = ", buf, INBUFLEN) == -1) {
-			free(buf);
-			return (-1);
-		}
+		if (input_read_line(fp, "COUNT = ", buf, INBUFLEN) == -1)
+			goto cleanup;
 
-		if (input_read_line(fp, "Outputlen = ", buf, INBUFLEN) == -1) {
-			free(buf);
-			return (-1);
-		}
+		if (input_read_line(fp, "Outputlen = ", buf, INBUFLEN) == -1)
+			goto cleanup;
 
 		errstr = NULL;
 		lengths[idx] = strtonum(buf, 0, UINT_MAX, &errstr);
@@ -334,10 +342,8 @@ input_get_monte(FILE *fp, u_int8_t **seed, size_t *seedlen,
 
 		lengths[idx] = lengths[idx] / 8;
 
-		if (input_read_line(fp, "Output = ", buf, INBUFLEN) == -1) {
-			free(buf);
-			return (-1);
-		}
+		if (input_read_line(fp, "Output = ", buf, INBUFLEN) == -1)
+			goto cleanup;
 
 		input_hex2bin(buf, &mds[idx], &digestlen);
 
@@ -345,9 +351,20 @@ input_get_monte(FILE *fp, u_int8_t **seed, size_t *seedlen,
 			fatal("digest %zu != %zu", digestlen, lengths[idx]);
 	}
 
+	ret = 0;
+
+cleanup:
 	free(buf);
 
-	return (0);
+	if (ret == -1) {
+		free(*seed);
+		seed = NULL;
+
+		for (idx = 0; idx < MONTE_COUNT; idx++)
+			free(mds[idx]);
+	}
+
+	return (ret);
 }
 
 /*
