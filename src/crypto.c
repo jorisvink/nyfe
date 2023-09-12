@@ -99,6 +99,13 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 		src = nyfe_file_open(in, NYFE_FILE_READ);
 	}
 
+	/*
+	 * Register memory that will contain sensitive information.
+	 * If something goes wrong and we fatal() these are explicitly
+	 * wiped before the program exits.
+	 */
+	nyfe_zeroize_register(&cipher, sizeof(cipher));
+
 	/* Generate seed and write it to the destination file. */
 	nyfe_random_bytes(seed, sizeof(seed));
 	nyfe_file_write(dst, seed, sizeof(seed));
@@ -140,7 +147,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	nyfe_file_write(dst, tag, sizeof(tag));
 
 	/* We no longer need any of this in memory. */
-	nyfe_mem_zero(&cipher, sizeof(cipher));
+	nyfe_zeroize(&cipher, sizeof(cipher));
 
 	(void)close(src);
 
