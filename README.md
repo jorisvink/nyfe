@@ -17,14 +17,11 @@ WARNING: Nyfe uses experimental sponge-based cryptography.
 
 ## Confidentiality and Integrity
 
-Its confidentiality and integrity are protected using a permutation
-based authenticated stream cipher: Agelas.
+Its confidentiality and integrity are protected under Agelas.
 
-Agelas is an experimental AE construction aimed at trying to design
-a simple to understand and easy to implement AE stream cipher based
-on the duplex sponge construct.
-
-Lots of inspiration was taken from Keyak and SpongeWrap.
+Agelas is an experimental Authenticated Encryption stream cipher
+that is constructed with Keccak-f[1600,24] in a duplex-sponge
+construct.
 
 ## KDF
 
@@ -34,7 +31,7 @@ KMAC256 is a NIST standard.
 
 ## Random
 
-The random system in Nyfe is also based on the Keccak sponge.
+The random system in Nyfe is also based on Keccak.
 
 In this case, it will instantiate an Agelas context with keys
 that are derived from a random seed from the system which are
@@ -52,10 +49,11 @@ You're on your own to generate that file initially.
 ## Keys
 
 The keys used with Agelas are derived from strong 256-bit symmetrical
-secrets that are stored in keyfiles in combination with unique per-file seeds.
+secrets that are stored in key files.
 
-Separate keys and seeds are derived from the base symmetrical secret
-for each new file.
+Nyfe will generate a new key per file that is to be encrypted by selecting
+a seed uniformly at random and using it in combination with the symmetrical
+key from the given key file to derive new key material via KMAC256.
 
 ## Metadata
 
