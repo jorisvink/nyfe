@@ -62,6 +62,20 @@ nyfe_zeroize_register(void *ptr, size_t len)
 }
 
 /*
+ * Warn if there are any pending entries on the zeroize list.
+ */
+void
+nyfe_zeroize_warn(void)
+{
+	struct zeroize		*z;
+
+	LIST_FOREACH(z, &zeroize_list, list) {
+		printf("WARN: %p (%zu bytes) was still on zeroize list\n",
+		    z->ptr, z->length);
+	}
+}
+
+/*
  * Clear all sensitive data that was previously registered.
  */
 void

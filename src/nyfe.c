@@ -134,7 +134,9 @@ main(int argc, char *argv[])
 
 	cb(argc, argv);
 
+	nyfe_zeroize_warn();
 	nyfe_zeroize_all();
+
 	nyfe_file_remove_lingering();
 
 	return (0);

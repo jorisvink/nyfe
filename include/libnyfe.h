@@ -77,6 +77,7 @@ void	nyfe_agelas_decrypt(struct nyfe_agelas *, const void *, void *, size_t);
 
 /* src/mem.c */
 void	nyfe_zeroize_all(void);
+void	nyfe_zeroize_warn(void);
 void	nyfe_zeroize_init(void);
 void	nyfe_zeroize(void *, size_t);
 void	nyfe_mem_zero(void *, size_t);
