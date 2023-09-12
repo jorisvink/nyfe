@@ -90,6 +90,9 @@ main(int argc, char *argv[])
 	return (0);
 }
 
+/*
+ * Read input from the source file, and run the appropriate tests.
+ */
 void
 test_input(const char *file, int capacity, int monte)
 {
@@ -123,6 +126,16 @@ test_input(const char *file, int capacity, int monte)
 	fclose(fp);
 }
 
+/*
+ * Monte Carlo test, produces 100.000 hashes, with intermediate
+ * checkpoints every 1000 hashes.
+ *
+ * We compare the checkpoints from the input file against
+ * the calculated digests and error out if they mismatch.
+ *
+ * We hardcode some values in this file that could've been read
+ * from the input files.
+ */
 int
 test_monte(const char *file, FILE *fp, struct nyfe_sha3 *ctx, size_t expected)
 {
@@ -192,6 +205,10 @@ test_monte(const char *file, FILE *fp, struct nyfe_sha3 *ctx, size_t expected)
 	return (0);
 }
 
+/*
+ * Test hashing a single message and compare it to the expected digest.
+ * We fail if they mismatch.
+ */
 int
 test_message(const char *file, FILE *fp, struct nyfe_sha3 *ctx, size_t expected)
 {
@@ -221,6 +238,14 @@ test_message(const char *file, FILE *fp, struct nyfe_sha3 *ctx, size_t expected)
 	return (0);
 }
 
+/*
+ * Read from the input file a single message to be tested.
+ *
+ * Expects the format to be:
+ * 	Len = XXX
+ *	Msg = ABCDEF1234567890
+ *	Output = ABCDEF1234567890
+ */
 int
 input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
     u_int8_t **md, size_t *mdlen)
@@ -269,6 +294,10 @@ input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
 	return (0);
 }
 
+/*
+ * Read from the source file the entire Monte Carlo test and
+ * all 100 checkpoints.
+ */
 int
 input_get_monte(FILE *fp, u_int8_t **seed, size_t *seedlen,
     u_int8_t **mds, size_t *lengths, size_t expected)
@@ -321,6 +350,9 @@ input_get_monte(FILE *fp, u_int8_t **seed, size_t *seedlen,
 	return (0);
 }
 
+/*
+ * Helper to convert a hex string into bytes.
+ */
 void
 input_hex2bin(char *hex, u_int8_t **out, size_t *outlen)
 {
@@ -353,6 +385,10 @@ input_hex2bin(char *hex, u_int8_t **out, size_t *outlen)
 	*outlen = buflen;
 }
 
+/*
+ * Helper to read a line from an input file (ignoring comments and
+ * empty lines completely).
+ */
 int
 input_read_line(FILE *fp, const char *prefix, char *in, size_t len)
 {
@@ -383,6 +419,9 @@ input_read_line(FILE *fp, const char *prefix, char *in, size_t len)
 	return (0);
 }
 
+/*
+ * Terrible, terrible things happened.
+ */
 void
 fatal(const char *fmt, ...)
 {
