@@ -20,8 +20,8 @@ WARNING: Nyfe uses experimental sponge-based cryptography.
 Its confidentiality and integrity are protected under Agelas.
 
 Agelas is an experimental Authenticated Encryption stream cipher
-that is constructed with Keccak-f[1600,24] in a duplex-sponge
-construct.
+that is constructed with Keccak-f[1600,24] in combination with
+a duplex-sponge.
 
 ## KDF
 
