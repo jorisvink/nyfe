@@ -79,7 +79,8 @@ $ make
 
 # Tests
 
-Nyfe includes the NIST SHA3 tests for SHA3-256 and SHA3-512.
+Nyfe includes the NIST SHA3 tests for SHA3-256, SHA3-512,
+SHAKE128 and SHAKE256.
 
 You can run them on your machine by invoking the right target.
 
