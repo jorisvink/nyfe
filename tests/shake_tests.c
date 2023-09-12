@@ -30,6 +30,7 @@
 
 #include "libnyfe.h"
 
+#define MONTE_FIXED_INPUT	16
 #define MONTE_COUNT		100
 #define	INBUFLEN		(1024 * 1024)
 
@@ -135,13 +136,18 @@ test_monte(const char *file, FILE *fp, struct nyfe_sha3 *ctx, size_t expected)
 	if (seedlen > sizeof(digest))
 		fatal("nope");
 
-	/* See SHAKE128Monte.rsp and SHAKE256Monte.rsp respectively. */
+	/*
+	 * See SHAKE128Monte.rsp and SHAKE256Monte.rsp respectively.
+	 * These could be parsed out of the file as well, maybe sometime.
+	 */
 	if (expected == 16) {
 		minlen = 16;
 		maxlen = 140;
-	} else {
+	} else if (expected == 32) {
 		minlen = 2;
 		maxlen = 250;
+	} else {
+		fatal("unknown digest");
 	}
 
 	range = (maxlen - minlen) + 1;
@@ -159,7 +165,7 @@ test_monte(const char *file, FILE *fp, struct nyfe_sha3 *ctx, size_t expected)
 			else
 				fatal("unknown digest");
 
-			nyfe_sha3_update(ctx, digest, 16);
+			nyfe_sha3_update(ctx, digest, MONTE_FIXED_INPUT);
 			nyfe_mem_zero(digest, sizeof(digest));
 			nyfe_sha3_final(ctx, digest, outlen);
 
