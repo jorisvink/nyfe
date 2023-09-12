@@ -39,8 +39,9 @@ void	test_input(const char *, int, int);
 void	input_hex2bin(char *, u_int8_t **, size_t *);
 int	input_read_line(FILE *, const char *, char *, size_t);
 
-int	input_get_monte(FILE *, u_int8_t **, size_t *, u_int8_t **, size_t);
 int	input_get_message(FILE *, u_int8_t **, size_t *, u_int8_t **, size_t *);
+int	input_get_monte(FILE *, u_int8_t **, size_t *, u_int8_t **,
+	    size_t *, size_t);
 
 int	test_monte(const char *, FILE *, struct nyfe_sha3 *, size_t);
 int	test_message(const char *, FILE *, struct nyfe_sha3 *, size_t);
@@ -58,17 +59,17 @@ main(int argc, char *argv[])
 	while ((ch = getopt(argc, argv, "c:m")) != -1) {
 		switch (ch) {
 		case 'c':
-			capacity = strtonum(optarg, 256, 512, &errstr);
+			capacity = strtonum(optarg, 128, 256, &errstr);
 			if (errstr != NULL)
 				fatal("%s: %s", optarg, errstr);
-			if (capacity != 256 && capacity != 512)
-				fatal("capacity must be 256 or 512");
+			if (capacity != 128 && capacity != 256)
+				fatal("capacity must be 128 or 256");
 			break;
 		case 'm':
 			monte = 1;
 			break;
 		default:
-			fatal("Usage: sha3_tests [-c capacity] [file]");
+			fatal("Usage: shake_tests [-c capacity] [file]");
 		}
 	}
 
@@ -79,7 +80,7 @@ main(int argc, char *argv[])
 		fatal("no capacity (-c) specified");
 
 	if (argc != 1)
-		fatal("Usage: sha3_tests [-c capacity] [file]");
+		fatal("Usage: shake_tests [-c capacity] [file]");
 
 	test_input(argv[0], capacity, monte);
 
@@ -97,15 +98,15 @@ test_input(const char *file, int capacity, int monte)
 		fatal("failed to open '%s': %s", file, strerror(errno));
 
 	for (;;) {
-		if (capacity == 256) {
-			expected = 32;
-			nyfe_sha3_init256(&ctx);
-		} else if (capacity == 512) {
-			expected = 64;
-			nyfe_sha3_init512(&ctx);
+		if (capacity == 128) {
+			nyfe_xof_shake128_init(&ctx);
+		} else if (capacity == 256) {
+			nyfe_xof_shake256_init(&ctx);
 		} else {
 			fatal("unknown capacity: %d", capacity);
 		}
+
+		expected = capacity / 8;
 
 		if (monte) {
 			if (test_monte(file, fp, &ctx, expected) == -1)
@@ -122,32 +123,54 @@ test_input(const char *file, int capacity, int monte)
 int
 test_monte(const char *file, FILE *fp, struct nyfe_sha3 *ctx, size_t expected)
 {
-	u_int8_t		digest[64];
-	size_t			seedlen, i, j;
+	u_int16_t		rightlen;
+	u_int8_t		digest[256];
+	size_t			range, minlen, maxlen;
 	u_int8_t		*seed, *mds[MONTE_COUNT];
+	size_t			outlen, seedlen, i, j, lengths[MONTE_COUNT];
 
-	if (input_get_monte(fp, &seed, &seedlen, mds, expected) == -1)
+	if (input_get_monte(fp, &seed, &seedlen, mds, lengths, expected) == -1)
 		return (-1);
 
 	if (seedlen > sizeof(digest))
 		fatal("nope");
 
+	/* See SHAKE128Monte.rsp and SHAKE256Monte.rsp respectively. */
+	if (expected == 16) {
+		minlen = 16;
+		maxlen = 140;
+	} else {
+		minlen = 2;
+		maxlen = 250;
+	}
+
+	range = (maxlen - minlen) + 1;
+	outlen = maxlen;
+
+	memset(digest, 0, sizeof(digest));
 	memcpy(digest, seed, seedlen);
 
 	for (j = 0; j < MONTE_COUNT; j++) {
 		for (i = 0; i < 1000; i++) {
-			if (expected == 32)
-				nyfe_sha3_init256(ctx);
-			else if (expected == 64)
-				nyfe_sha3_init512(ctx);
+			if (expected == 16)
+				nyfe_xof_shake128_init(ctx);
+			else if (expected == 32)
+				nyfe_xof_shake256_init(ctx);
 			else
 				fatal("unknown digest");
 
-			nyfe_sha3_update(ctx, digest, expected);
-			nyfe_sha3_final(ctx, digest, expected);
+			nyfe_sha3_update(ctx, digest, 16);
+			nyfe_mem_zero(digest, sizeof(digest));
+			nyfe_sha3_final(ctx, digest, outlen);
+
+			memcpy(&rightlen,
+			    &digest[outlen - 2], sizeof(rightlen));
+			rightlen = htons(rightlen);
+
+			outlen = minlen + (rightlen % range);
 		}
 
-		if (memcmp(digest, mds[j], expected))
+		if (memcmp(digest, mds[j], lengths[j]))
 			fatal("%s - [COUNT %zu] test failed", file, j);
 
 		printf("%s - [COUNT %zu] test OK\n", file, j);
@@ -226,7 +249,7 @@ input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
 			fatal("message length is incorrect");
 	}
 
-	if (input_read_line(fp, "MD = ", buf, INBUFLEN) == -1) {
+	if (input_read_line(fp, "Output = ", buf, INBUFLEN) == -1) {
 		free(buf);
 		return (-1);
 	}
@@ -240,15 +263,16 @@ input_get_message(FILE *fp, u_int8_t **msg, size_t *msglen,
 
 int
 input_get_monte(FILE *fp, u_int8_t **seed, size_t *seedlen,
-    u_int8_t **mds, size_t expected)
+    u_int8_t **mds, size_t *lengths, size_t expected)
 {
 	char		*buf;
+	const char	*errstr;
 	size_t		idx, digestlen;
 
 	if ((buf = malloc(INBUFLEN)) == NULL)
 		fatal("malloc failed");
 
-	if (input_read_line(fp, "Seed = ", buf, INBUFLEN) == -1) {
+	if (input_read_line(fp, "Msg = ", buf, INBUFLEN) == -1) {
 		free(buf);
 		return (-1);
 	}
@@ -261,15 +285,27 @@ input_get_monte(FILE *fp, u_int8_t **seed, size_t *seedlen,
 			return (-1);
 		}
 
-		if (input_read_line(fp, "MD = ", buf, INBUFLEN) == -1) {
+		if (input_read_line(fp, "Outputlen = ", buf, INBUFLEN) == -1) {
+			free(buf);
+			return (-1);
+		}
+
+		errstr = NULL;
+		lengths[idx] = strtonum(buf, 0, UINT_MAX, &errstr);
+		if (errstr != NULL)
+			fatal("invalid length: %s", buf);
+
+		lengths[idx] = lengths[idx] / 8;
+
+		if (input_read_line(fp, "Output = ", buf, INBUFLEN) == -1) {
 			free(buf);
 			return (-1);
 		}
 
 		input_hex2bin(buf, &mds[idx], &digestlen);
 
-		if (digestlen != expected)
-			fatal("digest %zu != %zu", digestlen, expected);
+		if (digestlen != lengths[idx])
+			fatal("digest %zu != %zu", digestlen, lengths[idx]);
 	}
 
 	free(buf);
