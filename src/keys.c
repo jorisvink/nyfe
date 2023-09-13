@@ -151,6 +151,10 @@ nyfe_key_generate(const char *file, struct nyfe_key *curkey)
 	/* Open destination keyfile early so we can exit early. */
 	fd = nyfe_file_open(file, NYFE_FILE_CREATE);
 
+	/* Register sensitive data. */
+	nyfe_zeroize_register(&key, sizeof(key));
+	nyfe_zeroize_register(&cipher, sizeof(cipher));
+
 	/*
 	 * If curkey is NULL:
 	 *
@@ -187,8 +191,8 @@ nyfe_key_generate(const char *file, struct nyfe_key *curkey)
 	nyfe_file_write(fd, key.data, sizeof(key.data));
 	nyfe_file_write(fd, tag, sizeof(tag));
 
-	nyfe_mem_zero(&key, sizeof(key));
-	nyfe_mem_zero(&cipher, sizeof(cipher));
+	nyfe_zeroize(&key, sizeof(key));
+	nyfe_zeroize(&cipher, sizeof(cipher));
 
 	nyfe_file_close(fd);
 }
