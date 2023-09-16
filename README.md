@@ -13,11 +13,11 @@ Nyfe is licensed under the ISC license.
 
 WARNING: Nyfe uses experimental sponge-based cryptography.
 
-**You** probably do not want to use this.
-
 ## Disclaimer
 
 This is a research project and at most it's a little broken.
+
+**You** probably do not want to use this.
 
 ## Confidentiality and Integrity
 
