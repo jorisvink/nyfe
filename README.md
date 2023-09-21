@@ -15,7 +15,7 @@ WARNING: Nyfe uses experimental sponge-based cryptography.
 
 ## Disclaimer
 
-This is a research project and at most it's a little broken.
+This is a personal research project of mine and at most it's a little broken.
 
 **You** probably do not want to use this.
 
