@@ -361,7 +361,7 @@ crypto_size_unit(u_int64_t length)
 		return ("MB");
 
 	if (length >= (1 << 10))
-		return ("KB");
+		return ("kB");
 
 	return ("b");
 }
