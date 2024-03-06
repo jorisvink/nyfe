@@ -36,8 +36,8 @@
  *
  * To verify and decrypt a keyfile:
  *
- *	K = passphrase_kdf(passphrase, Rs[0..32])[64]
- *	Kc = KMAC256(K, seed, "NYFE.KEYFILE.KDF")
+ *	K = passphrase_kdf(passphrase, Rs[0..31])[64]
+ *	Kc = KMAC256(K, Rs[32..64], "NYFE.KEYFILE.KDF")
  *	ct, tag = Agelas(Kc, Id || Kb)
  *
  * The passphrase_kdf(passphrase, salt) function:
@@ -45,10 +45,10 @@
  *	tmp = Intermediate buffer holding pseudorandom data
  *	ap = Pseudorandom generated list of accesses into tmp
  *	buf = SHAKE256(len(passphrase) || passphrase || salt)[512]
- *	Kt = 512-bit Agelas key to generate key stream (buf_0[0..64])
- *	Km = 256-bit KMAC256 key (tmp[0..32])
+ *	Kt = 512-bit Agelas key to generate key stream (buf_0[0..63])
+ *	Km = 256-bit KMAC256 key (tmp[0..31])
  *
- *	ap = SHAKE256(buf[0..256])[PASSPHRASE_KDF_AP_SIZE]
+ *	ap = SHAKE256(buf[0..255])[PASSPHRASE_KDF_AP_SIZE]
  *	tmp = SHAKE256(buf[256..512])[PASSPHRASE_KDF_MEM_SIZE]
  *	tmp = Agelas(Kt, tmp, aad=None)
  *
@@ -56,7 +56,7 @@
  *		offset = ap[iter] * PASSPHRASE_KDF_STEP_LEN
  *		if iter % 2048 == 0; do
  *			Agelas(Kt,tmp[offset..PASSPHRASE_KDF_MEM_SIZE - offset])
- *		tmp[offset..offset+256] ^= SHAKE256(tmp[0..256])
+ *		tmp[offset..offset+256] ^= SHAKE256(tmp[0..255])
  *
  *	X = tmp[32..PASSPHRASE_KDF_MEM_SIZE]
  *	return KMAC256(Km, X, "NYFE.PASSPHRASE.KDF")[64]
@@ -73,6 +73,9 @@
 
 /* KMAC256 customization string for KDF. */
 #define KDF_DERIVE_LABEL		"NYFE.KEYFILE.KDF"
+
+/* KMAC256 customization string when deriving passphrase based keys. */
+#define KDF_PASSPHRASE_LABEL		"NYFE.PASSPHRASE.KDF"
 
 /*
  * Half of the seed is used as a salt into key_passphrase_kdf() while
@@ -198,12 +201,54 @@ nyfe_key_generate(const char *file, struct nyfe_key *curkey)
 }
 
 /*
+ * Prompt for a passphrase from which an encryption key is derived.
+ */
+void
+nyfe_key_from_passphrase(struct nyfe_key *key)
+{
+	struct nyfe_kmac256	kdf;
+	char			passphrase[256];
+	u_int8_t		salt[KEY_FILE_SALT_LEN];
+
+	PRECOND(key != NULL);
+
+	/* Register sensitive data. */
+	nyfe_zeroize_register(key, sizeof(*key));
+	nyfe_zeroize_register(&kdf, sizeof(kdf));
+	nyfe_zeroize_register(passphrase, sizeof(passphrase));
+
+	nyfe_mem_zero(salt, sizeof(salt));
+	nyfe_mem_zero(passphrase, sizeof(passphrase));
+	nyfe_read_passphrase(passphrase, sizeof(passphrase));
+
+	nyfe_output("deriving encryption key from passphrase ... |");
+
+	/* The salt passed is all zeroes. */
+	key_passphrase_kdf(passphrase, sizeof(passphrase),
+	    salt, sizeof(salt), key->data, sizeof(key->data));
+
+	/* Now run the intermediate key through KMAC256. */
+	nyfe_kmac256_init(&kdf, key->data, sizeof(key->data),
+	    KDF_PASSPHRASE_LABEL, sizeof(KDF_PASSPHRASE_LABEL) - 1);
+	nyfe_kmac256_final(&kdf, key->data, sizeof(key->data));
+
+	nyfe_output("\bdone\n");
+
+	/* Don't call nyfe_zeroize() on key as the caller will use it. */
+	nyfe_zeroize(&kdf, sizeof(kdf));
+	nyfe_zeroize(passphrase, sizeof(passphrase));
+}
+
+/*
  * Clone an existing key from one keyfile to another keyfile.
  */
 void
 nyfe_key_clone(const char *in, const char *out)
 {
 	struct nyfe_key		key;
+
+	PRECOND(in != NULL);
+	PRECOND(out != NULL);
 
 	nyfe_key_load(&key, in);
 	nyfe_key_generate(out, &key);

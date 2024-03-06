@@ -415,10 +415,13 @@ usage_encdec(void)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "options:\n");
 	fprintf(stderr, "\t-f  - Specifies which keyfile to use.\n");
+	fprintf(stderr, "\t-p  - Derive a key from a passphrase.\n");
 	fprintf(stderr, "\t-q  - Be quiet.\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "If -f was not specified nyfe will use ");
 	fprintf(stderr, "$HOME/.nyfe/secret.key\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "The -f and -p options are mutually exclusive\n");
 
 	exit(1);
 }
@@ -578,7 +581,7 @@ cmd_about(int argc, char **argv)
 static void
 encrypt_decrypt(int argc, char **argv, int encrypt)
 {
-	int		ch;
+	int		ch, derive_key;
 	const char	*keyfile, *in, *out;
 
 	PRECOND(argc >= 0);
@@ -586,11 +589,15 @@ encrypt_decrypt(int argc, char **argv, int encrypt)
 	PRECOND(encrypt == 0 || encrypt == 1);
 
 	keyfile = NULL;
+	derive_key = 0;
 
-	while ((ch = getopt(argc, argv, "f:q")) != -1) {
+	while ((ch = getopt(argc, argv, "f:pq")) != -1) {
 		switch (ch) {
 		case 'f':
 			keyfile = optarg;
+			break;
+		case 'p':
+			derive_key = 1;
 			break;
 		case 'q':
 			nyfe_quiet = 1;
@@ -603,7 +610,10 @@ encrypt_decrypt(int argc, char **argv, int encrypt)
 	argc -= optind;
 	argv += optind;
 
-	if (keyfile == NULL)
+	if (keyfile != NULL && derive_key)
+		fatal("-f and -p are mutually exclusive options");
+
+	if (derive_key == 0 && keyfile == NULL)
 		keyfile = path_default_keyfile();
 
 	in = NULL;

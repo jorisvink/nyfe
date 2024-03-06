@@ -81,6 +81,7 @@ void	nyfe_crypto_encrypt(const char *, const char *, const char *);
 
 /* src/keys.c */
 void	nyfe_key_clone(const char *, const char *);
+void	nyfe_key_from_passphrase(struct nyfe_key *);
 void	nyfe_key_load(struct nyfe_key *, const char *);
 void	nyfe_key_generate(const char *, struct nyfe_key *);
 

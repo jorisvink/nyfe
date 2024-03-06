@@ -69,7 +69,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 
 	/* in may be NULL to indicate stdin. */
 	/* out may be NULL to indicate stdout. */
-	PRECOND(keyfile != NULL);
+	/* keyfile may be NULL to indicate passphrase based derivation. */
 
 	/*
 	 * If stdout was requested, we set dst to STODUT_FILENO, otherwise
@@ -86,7 +86,10 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	 * Verify and decrypt the selected keyfile.
 	 * This automatically registers key as sensitive data.
 	 */
-	nyfe_key_load(&key, keyfile);
+	if (keyfile != NULL)
+		nyfe_key_load(&key, keyfile);
+	else
+		nyfe_key_from_passphrase(&key);
 
 	/* Allocate block for i/o operations, freed later. */
 	if ((block = calloc(1, BLOCK_SIZE)) == NULL)
@@ -176,7 +179,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 
 	/* in may be NULL to indicate stdin. */
 	PRECOND(out != NULL);
-	PRECOND(keyfile != NULL);
+	/* keyfile may be NULL to indicate passphrase based derivation. */
 
 	/* Open the destination early, so we exit early if we can't do it. */
 	dst = nyfe_file_open(out, NYFE_FILE_CREATE);
@@ -185,7 +188,10 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	 * Verify and decrypt the selected keyfile.
 	 * This automatically registers key as sensitive data.
 	 */
-	nyfe_key_load(&key, keyfile);
+	if (keyfile != NULL)
+		nyfe_key_load(&key, keyfile);
+	else
+		nyfe_key_from_passphrase(&key);
 
 	/* Allocate block for i/o operations, freed later. */
 	if ((block = calloc(1, BLOCK_SIZE)) == NULL)
@@ -268,10 +274,10 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 
 	if (nyfe_mem_cmp(tag, expected, sizeof(expected)) != 0) {
 		if (unlink(out) == -1) {
-			printf("WARNING: failed to remove '%s', do not use\n",
+			printf("\nWARNING: failed to remove '%s', do not use\n",
 			    out);
 		}
-		fatal("integrity check on '%s' failed", in);
+		fatal("\nintegrity check on '%s' failed", in);
 	}
 
 	(void)close(src);
