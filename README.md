@@ -1,7 +1,7 @@
 # Nyfe
 
 A software based file encryption tool where all cryptographic parts
-are based on a single cryptographic permutation: Keccak-f[1600,24].
+are based on a single cryptographic permutation: Keccak-p[1600,24].
 
 Nyfe is very minimal and lightweight as it has no external dependencies.
 
@@ -92,7 +92,7 @@ $ make keccak-tests
 ```
 
 The inclusion of these tests are to verify that the underlying
-Keccak-f[1600,24] implementation is working correctly.
+Keccak-p[1600,24] implementation is working correctly.
 
 Usage
 -----
