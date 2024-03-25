@@ -395,6 +395,7 @@ static void
 usage(void)
 {
 	fprintf(stderr, "Usage: nyfe [cmd] [cmdopts]\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "commands:\n");
 	fprintf(stderr, "\tencrypt  - Encrypts a file\n");
 	fprintf(stderr, "\tdecrypt  - Decrypts a file\n");
@@ -403,6 +404,8 @@ usage(void)
 	fprintf(stderr, "\tabout    - Nyfe version information\n");
 	fprintf(stderr, "\tinit     - Set up nyfe for the first time\n");
 	fprintf(stderr, "\ttest     - Performance test (halt with SIGINT)\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "%s, built on %s\n", nyfe_version, nyfe_build_date);
 
 	exit(1);
 }
