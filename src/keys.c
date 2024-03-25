@@ -217,6 +217,7 @@ nyfe_key_from_passphrase(struct nyfe_key *key)
 	nyfe_zeroize_register(&kdf, sizeof(kdf));
 	nyfe_zeroize_register(passphrase, sizeof(passphrase));
 
+	nyfe_mem_zero(key, sizeof(*key));
 	nyfe_mem_zero(salt, sizeof(salt));
 	nyfe_mem_zero(passphrase, sizeof(passphrase));
 	nyfe_read_passphrase(passphrase, sizeof(passphrase));
