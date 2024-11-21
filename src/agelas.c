@@ -68,7 +68,7 @@
  * Additional Authenticated Data may be added at any time as long as this
  * matches in both the encryption and decryption process.
  *
- * Each AAD call must fit in a single agelas_bytepad() block.
+ * The data for each AAD call must fit in a single agelas_bytepad() block.
  *
  * add_aad(aad):
  *	aad_padded = bytepad(aad, 136)
