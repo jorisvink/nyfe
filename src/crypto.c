@@ -57,7 +57,7 @@ static void	crypto_setup(const void *, size_t, const void *, size_t,
  * Encrypts the `in` file into `out`.
  */
 void
-nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
+nyfe_crypto_encrypt(const char *in, const char *out, const char *kfile, int red)
 {
 	size_t				ret;
 	struct nyfe_key			key;
@@ -69,7 +69,8 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 
 	/* in may be NULL to indicate stdin. */
 	/* out may be NULL to indicate stdout. */
-	/* keyfile may be NULL to indicate passphrase based derivation. */
+	/* kfile may be NULL to indicate passphrase based derivation. */
+	PRECOND(red == 1 || red == 0);
 
 	/*
 	 * If stdout was requested, we set dst to STODUT_FILENO, otherwise
@@ -86,8 +87,8 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
 	 * Verify and decrypt the selected keyfile.
 	 * This automatically registers key as sensitive data.
 	 */
-	if (keyfile != NULL)
-		nyfe_key_load(&key, keyfile);
+	if (kfile != NULL)
+		nyfe_key_load(&key, kfile, red);
 	else
 		nyfe_key_from_passphrase(&key);
 
@@ -165,7 +166,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *keyfile)
  * If the integrity protection fails, the out file is removed.
  */
 void
-nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
+nyfe_crypto_decrypt(const char *in, const char *out, const char *kfile, int red)
 {
 	u_int32_t		ret;
 	int			sig;
@@ -179,7 +180,8 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 
 	/* in may be NULL to indicate stdin. */
 	PRECOND(out != NULL);
-	/* keyfile may be NULL to indicate passphrase based derivation. */
+	/* kfile may be NULL to indicate passphrase based derivation. */
+	PRECOND(red == 1 || red == 0);
 
 	/* Open the destination early, so we exit early if we can't do it. */
 	dst = nyfe_file_open(out, NYFE_FILE_CREATE);
@@ -188,8 +190,8 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *keyfile)
 	 * Verify and decrypt the selected keyfile.
 	 * This automatically registers key as sensitive data.
 	 */
-	if (keyfile != NULL)
-		nyfe_key_load(&key, keyfile);
+	if (kfile != NULL)
+		nyfe_key_load(&key, kfile, red);
 	else
 		nyfe_key_from_passphrase(&key);
 

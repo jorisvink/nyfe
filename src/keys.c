@@ -15,6 +15,7 @@
  */
 
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,30 +92,55 @@ static void	key_passphrase_kdf(const void *, u_int32_t, const void *,
 /*
  * Attempt to verify and decrypt a Nyfe key in the given file.
  * If successfull the key is returned via the `key` argument.
+ *
+ * If red is 1 and the given key file is the size of NYFE_KEY_LEN
+ * we read the key as-is from it and use that.
  */
 void
-nyfe_key_load(struct nyfe_key *key, const char *file)
+nyfe_key_load(struct nyfe_key *key, const char *file, int red)
 {
 	int				fd;
+	struct stat			st;
 	struct nyfe_agelas		cipher;
 	u_int8_t			tag[NYFE_TAG_LEN];
 	u_int8_t			seed[NYFE_SEED_LEN];
 
 	PRECOND(key != NULL);
 	PRECOND(file != NULL);
-
-	nyfe_output("unlocking keyfile '%s'\n", file);
+	PRECOND(red == 1 || red == 0);
 
 	/* Open the suspected keyfile, read in the seed and key. */
 	fd = nyfe_file_open(file, NYFE_FILE_READ);
+	if (fstat(fd, &st) == -1)
+		fatal("fstat on '%s' failed: %s", file, errno_s);
+
+	nyfe_zeroize_register(key, sizeof(*key));
+
+	/* Handle red keys. */
+	if (red == 1) {
+		if (st.st_size != sizeof(key->data))
+			fatal("red key expected, but not found");
+
+		nyfe_mem_zero(key, sizeof(*key));
+
+		if (nyfe_file_read(fd,
+		    key->data, sizeof(key->data)) != sizeof(key->data))
+			fatal("failed to read key from %s", file);
+
+		(void)close(fd);
+
+		nyfe_output("using red key '%s'\n", file);
+		return;
+	}
+
+	nyfe_zeroize_register(&cipher, sizeof(cipher));
+
+	nyfe_output("unlocking keyfile '%s'\n", file);
+
 	if (nyfe_file_read(fd, seed, sizeof(seed)) != sizeof(seed))
 		fatal("failed to read seed from %s", file);
 	if (nyfe_file_read(fd, key, sizeof(*key)) != sizeof(*key))
 		fatal("failed to read key data from %s", file);
-
-	/* Register any sensitive buffers. */
-	nyfe_zeroize_register(key, sizeof(*key));
-	nyfe_zeroize_register(&cipher, sizeof(cipher));
 
 	/* Generate key material for decryption. */
 	key_generate_secret(&cipher, seed, sizeof(seed));
@@ -251,7 +277,7 @@ nyfe_key_clone(const char *in, const char *out)
 	PRECOND(in != NULL);
 	PRECOND(out != NULL);
 
-	nyfe_key_load(&key, in);
+	nyfe_key_load(&key, in, 0);
 	nyfe_key_generate(out, &key);
 
 	nyfe_zeroize(&key, sizeof(key));

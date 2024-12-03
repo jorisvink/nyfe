@@ -76,14 +76,14 @@ void	nyfe_output(const char *, ...) __attribute__((format (printf, 1, 2)));
 const char	*nyfe_entropy_path(void);
 
 /* src/crypto.c */
-void	nyfe_crypto_decrypt(const char *, const char *, const char *);
-void	nyfe_crypto_encrypt(const char *, const char *, const char *);
+void	nyfe_crypto_decrypt(const char *, const char *, const char *, int);
+void	nyfe_crypto_encrypt(const char *, const char *, const char *, int);
 
 /* src/keys.c */
 void	nyfe_key_clone(const char *, const char *);
 void	nyfe_key_from_passphrase(struct nyfe_key *);
-void	nyfe_key_load(struct nyfe_key *, const char *);
 void	nyfe_key_generate(const char *, struct nyfe_key *);
+void	nyfe_key_load(struct nyfe_key *, const char *, int);
 
 /* src/selftests.c */
 void	nyfe_selftest_kmac256(void);
