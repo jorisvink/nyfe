@@ -201,6 +201,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *kfile, int red)
 
 	/* If stdin was requested, just set src to STDIN_FILENO. */
 	if (in == NULL) {
+		in = "(stdin)";
 		src = STDIN_FILENO;
 	} else {
 		src = nyfe_file_open(in, NYFE_FILE_READ);
