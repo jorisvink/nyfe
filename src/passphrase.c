@@ -132,8 +132,10 @@ nyfe_passphrase_kdf(const void *passphrase, u_int32_t passphrase_len,
 	 *	- tmp[offset] ^= buf
 	 */
 	for (iter = 0; iter < PASSPHRASE_KDF_ITERATIONS; iter++) {
+#if !defined(NYFE_LIBRARY_ONLY)
 		if ((sig = nyfe_signal_pending()) != -1)
 			fatal("clean abort due to received signal %d", sig);
+#endif
 
 		offset = ap[iter] * PASSPHRASE_KDF_STEP_LEN;
 
