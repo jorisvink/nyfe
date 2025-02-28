@@ -50,13 +50,6 @@
 		}							\
 	} while (0)
 
-/* Constants for certain primitives. */
-#define NYFE_KEY_ID_LEN		16
-#define NYFE_TAG_LEN		32
-#define NYFE_SEED_LEN		64
-#define NYFE_KEY_LEN		64
-#define NYFE_OKM_LEN		NYFE_KEY_LEN
-
 /*
  * A key loaded from a keyfile.
  */
