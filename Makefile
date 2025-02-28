@@ -34,6 +34,7 @@ LIBSRC=	src/agelas.c \
 	src/keccak1600.c \
 	src/kmac256.c \
 	src/mem.c \
+	src/passphrase.c \
 	src/sha3.c \
 	src/random.c
 
