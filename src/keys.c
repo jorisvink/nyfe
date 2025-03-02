@@ -214,7 +214,8 @@ nyfe_key_from_passphrase(struct nyfe_key *key)
 
 	/* The salt passed is all zeroes. */
 	nyfe_passphrase_kdf(passphrase, sizeof(passphrase),
-	    salt, sizeof(salt), key->data, sizeof(key->data));
+	    salt, sizeof(salt), key->data, sizeof(key->data),
+	    KDF_PASSPHRASE_LABEL, sizeof(KDF_PASSPHRASE_LABEL) - 1);
 
 	/* Now run the intermediate key through KMAC256. */
 	nyfe_kmac256_init(&kdf, key->data, sizeof(key->data),
@@ -277,7 +278,8 @@ key_generate_secret(struct nyfe_agelas *cipher, const u_int8_t *seed,
 	salt_prf = &seed[NYFE_KEY_FILE_SALT_LEN];
 
 	nyfe_passphrase_kdf(passphrase, sizeof(passphrase),
-	    salt_kdf, NYFE_KEY_FILE_SALT_LEN, key, sizeof(key));
+	    salt_kdf, NYFE_KEY_FILE_SALT_LEN, key, sizeof(key),
+	    KDF_PASSPHRASE_LABEL, sizeof(KDF_PASSPHRASE_LABEL) - 1);
 	nyfe_zeroize(passphrase, sizeof(passphrase));
 
 	nyfe_output("\bdone\n");
