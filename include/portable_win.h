@@ -48,11 +48,13 @@
 #define MIN(a, b)	((a > b) ? b : a)
 
 /*
- * Windows does not define O_NOFOLLOW, define it to be nothing so we
- * do not have to modify the open() code in nyfe_file_open() with
- * ugle defines.
+ * Windows does not define O_NOFOLLOW and we need O_BINARY on windows.
+ * So define O_NOFOLLOW to O_BINARY so that we don't have to change
+ * anything in the actual code.
+ *
+ * Yes, this is what we in bird-culture call a hack, and yes this is fine.
  */
-#define O_NOFOLLOW	0
+#define O_NOFOLLOW	O_BINARY
 
 /*
  * I like using BSD-style typedefs which windows does not carry, so
