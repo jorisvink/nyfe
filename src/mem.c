@@ -15,11 +15,11 @@
  */
 
 #include <sys/types.h>
-#include <sys/queue.h>
 
 #include <stdlib.h>
 
 #include "nyfe.h"
+#include "queue.h"
 
 /*
  * Points to memory that contains sensitive data and must be cleared

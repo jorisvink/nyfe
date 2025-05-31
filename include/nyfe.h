@@ -22,6 +22,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(NYFE_PLATFORM_WINDOWS)
+#include "portable_win.h"
+#endif
+
 #include "libnyfe.h"
 
 /* Apple .. */

@@ -17,6 +17,10 @@
 #ifndef __H_LIBNYFE_H
 #define __H_LIBNYFE_H
 
+#if defined(NYFE_PLATFORM_WINDOWS)
+#include "portable_win.h"
+#endif
+
 /* Keccak1600 defines. */
 #define NYFE_KECCAK_1600_RATE		1600
 #define NYFE_KECCAK_1600_MIN_BITS	256

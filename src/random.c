@@ -129,9 +129,15 @@ random_rekey(void)
 	}
 #endif
 
+#if defined(NYFE_PLATFORM_WINDOWS)
+	/* XXX */
+	if (RtlGenRandom(seed, sizeof(seed)) == 0)
+		fatal("RtlGenRandom: failed");
+#else
 	/* Obtain some system entropy. */
 	if (getentropy(seed, sizeof(seed)) == -1)
 		fatal("getentropy: %s", errno_s);
+#endif
 
 	/*
 	 * Derive key and nonce material using KMAC256 with the seed
