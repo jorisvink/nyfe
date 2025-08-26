@@ -94,7 +94,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *kfile, int red)
 
 	/* Allocate block for i/o operations, freed later. */
 	if ((block = calloc(1, BLOCK_SIZE)) == NULL)
-		fatal("failed to allocate encryption buffer");
+		nyfe_fatal("failed to allocate encryption buffer");
 
 	/* If stdin was requested, just set src to STDIN_FILENO. */
 	if (in == NULL) {
@@ -105,7 +105,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *kfile, int red)
 
 	/*
 	 * Register memory that will contain sensitive information.
-	 * If something goes wrong and we fatal() these are explicitly
+	 * If something goes wrong and we nyfe_fatal() these are explicitly
 	 * wiped before the program exits.
 	 */
 	nyfe_zeroize_register(&cipher, sizeof(cipher));
@@ -128,7 +128,7 @@ nyfe_crypto_encrypt(const char *in, const char *out, const char *kfile, int red)
 		if ((sig = nyfe_signal_pending()) != -1) {
 			if (out != NULL)
 				(void)unlink(out);
-			fatal("clean abort due to received signal %d", sig);
+			nyfe_fatal("abort due to received signal %d", sig);
 		}
 
 		if ((ret = nyfe_file_read(src, block, BLOCK_SIZE)) == 0)
@@ -197,7 +197,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *kfile, int red)
 
 	/* Allocate block for i/o operations, freed later. */
 	if ((block = calloc(1, BLOCK_SIZE)) == NULL)
-		fatal("failed to allocate decryption buffer");
+		nyfe_fatal("failed to allocate decryption buffer");
 
 	/* If stdin was requested, just set src to STDIN_FILENO. */
 	if (in == NULL) {
@@ -209,14 +209,14 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *kfile, int red)
 
 	/*
 	 * Register memory that will contain sensitive information.
-	 * If something goes wrong and we fatal() these are explicitly
+	 * If something goes wrong and we nyfe_fatal() these are explicitly
 	 * wiped before the program exits.
 	 */
 	nyfe_zeroize_register(&cipher, sizeof(cipher));
 
 	/* Read the seed from the source file. */
 	if (nyfe_file_read(src, seed, sizeof(seed)) != sizeof(seed))
-		fatal("failed to read seed from %s", in);
+		nyfe_fatal("failed to read seed from %s", in);
 
 	/* Derive key material and setup cipher context. */
 	crypto_setup(key.data, sizeof(key.data), seed, sizeof(seed),
@@ -236,7 +236,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *kfile, int red)
 	for (;;) {
 		if ((sig = nyfe_signal_pending()) != -1) {
 			(void)unlink(out);
-			fatal("clean abort due to received signal %d", sig);
+			nyfe_fatal("abort due to received signal %d", sig);
 		}
 
 		if ((ret = nyfe_file_read(src, block, BLOCK_SIZE)) == 0)
@@ -249,7 +249,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *kfile, int red)
 		}
 
 		if (ret < sizeof(tag))
-			fatal("%s: too short of a read", __func__);
+			nyfe_fatal("%s: too short of a read", __func__);
 
 		ret -= sizeof(tag);
 		memcpy(tag, &block[ret], sizeof(tag));
@@ -280,7 +280,7 @@ nyfe_crypto_decrypt(const char *in, const char *out, const char *kfile, int red)
 			printf("\nWARNING: failed to remove '%s', do not use\n",
 			    out);
 		}
-		fatal("\nintegrity check on '%s' failed", in);
+		nyfe_fatal("\nintegrity check on '%s' failed", in);
 	}
 
 	(void)close(src);

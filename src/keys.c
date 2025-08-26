@@ -74,20 +74,20 @@ nyfe_key_load(struct nyfe_key *key, const char *file, int red)
 	/* Open the suspected keyfile, read in the seed and key. */
 	fd = nyfe_file_open(file, NYFE_FILE_READ);
 	if (fstat(fd, &st) == -1)
-		fatal("fstat on '%s' failed: %s", file, errno_s);
+		nyfe_fatal("fstat on '%s' failed: %s", file, errno_s);
 
 	nyfe_zeroize_register(key, sizeof(*key));
 
 	/* Handle red keys. */
 	if (red == 1) {
 		if (st.st_size != sizeof(key->data))
-			fatal("red key expected, but not found");
+			nyfe_fatal("red key expected, but not found");
 
 		nyfe_mem_zero(key, sizeof(*key));
 
 		if (nyfe_file_read(fd,
 		    key->data, sizeof(key->data)) != sizeof(key->data))
-			fatal("failed to read key from %s", file);
+			nyfe_fatal("failed to read key from %s", file);
 
 		(void)close(fd);
 
@@ -100,9 +100,9 @@ nyfe_key_load(struct nyfe_key *key, const char *file, int red)
 	nyfe_output("unlocking keyfile '%s'\n", file);
 
 	if (nyfe_file_read(fd, seed, sizeof(seed)) != sizeof(seed))
-		fatal("failed to read seed from %s", file);
+		nyfe_fatal("failed to read seed from %s", file);
 	if (nyfe_file_read(fd, key, sizeof(*key)) != sizeof(*key))
-		fatal("failed to read key data from %s", file);
+		nyfe_fatal("failed to read key data from %s", file);
 
 	/* Generate key material for decryption. */
 	key_generate_secret(&cipher, seed, sizeof(seed));
@@ -113,7 +113,7 @@ nyfe_key_load(struct nyfe_key *key, const char *file, int red)
 	nyfe_agelas_authenticate(&cipher, tag, sizeof(tag));
 
 	if (nyfe_mem_cmp(tag, key->tag, sizeof(tag)) != 0)
-		fatal("integrity check on '%s' failed", file);
+		nyfe_fatal("integrity check on '%s' failed", file);
 
 	/* Don't call nyfe_zeroize() on key as the caller will use it. */
 	nyfe_zeroize(&cipher, sizeof(cipher));

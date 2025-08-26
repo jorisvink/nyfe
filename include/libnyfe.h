@@ -140,4 +140,8 @@ int		nyfe_file_open(const char *, int);
 size_t		nyfe_file_read(int, void *, size_t);
 void		nyfe_file_write(int, const void *, size_t);
 
+/* src/utils.c */
+void	nyfe_fatal_callback(void (*)(const char *, va_list));
+void	nyfe_fatal(const char *, ...) __attribute__((noreturn));
+
 #endif

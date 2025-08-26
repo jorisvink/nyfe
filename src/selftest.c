@@ -73,7 +73,7 @@ nyfe_selftest_kmac256(void)
 	nyfe_mem_zero(&ctx, sizeof(ctx));
 
 	if (memcmp(out, kmac_test_1, sizeof(out)))
-		fatal("%s: kmac_self_test_1 failed", __func__);
+		nyfe_fatal("%s: kmac_self_test_1 failed", __func__);
 
 	/*
 	 * Test 2:
@@ -93,7 +93,7 @@ nyfe_selftest_kmac256(void)
 	nyfe_mem_zero(&ctx, sizeof(ctx));
 
 	if (memcmp(out, kmac_test_2, sizeof(out)))
-		fatal("%s: kmac_self_test_2 failed", __func__);
+		nyfe_fatal("%s: kmac_self_test_2 failed", __func__);
 }
 
 /*

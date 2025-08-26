@@ -196,17 +196,17 @@ nyfe_read_passphrase(void *buf, size_t len)
 
 	/* Kill echo on the terminal. */
 	if ((fd = open(_PATH_TTY, O_RDWR)) == -1)
-		fatal("open(%s): %s", _PATH_TTY, errno_s);
+		nyfe_fatal("open(%s): %s", _PATH_TTY, errno_s);
 
 	if (tcgetattr(fd, &old) == -1)
-		fatal("tcgetattr: %s", errno_s);
+		nyfe_fatal("tcgetattr: %s", errno_s);
 
 	cur = old;
 	cur.c_lflag &= ~(ECHO | ECHONL);
 
 	if (tcsetattr(fd, TCSAFLUSH, &cur) == -1) {
 		(void)tcsetattr(fd, TCSANOW, &old);
-		fatal("tcsetattr: %s", errno_s);
+		nyfe_fatal("tcsetattr: %s", errno_s);
 	}
 
 	/* Read the passphrase from the user. */
@@ -217,12 +217,12 @@ nyfe_read_passphrase(void *buf, size_t len)
 
 	while (off != (len - 1)) {
 		if ((sig = nyfe_signal_pending()) != -1)
-			fatal("aborted due to received signal %d", sig);
+			nyfe_fatal("aborted due to received signal %d", sig);
 
 		if (read(fd, &ptr[off], 1) == -1) {
 			if (errno == EINTR)
 				continue;
-			fatal("%s: read failed: %s", __func__, errno_s);
+			nyfe_fatal("%s: read failed: %s", __func__, errno_s);
 		}
 
 		if (ptr[off] == '\n')
@@ -235,7 +235,7 @@ nyfe_read_passphrase(void *buf, size_t len)
 
 	/* Restore terminal settings. */
 	if (tcsetattr(fd, TCSANOW, &old) == -1)
-		fatal("tcsetattr: %s", errno_s);
+		nyfe_fatal("tcsetattr: %s", errno_s);
 
 	nyfe_output("\n");
 }
@@ -251,39 +251,9 @@ nyfe_entropy_path(void)
 
 	len = snprintf(path, sizeof(path), "%s/entropy", homedir);
 	if (len == -1 || (size_t)len >= sizeof(path))
-		fatal("failed to construct path to entropy file");
+		nyfe_fatal("failed to construct path to entropy file");
 
 	return (path);
-}
-
-/*
- * A fatal error occurred, we will need to clean up.
- *
- * Before we do, block *all* signals that are blockable so we do
- * not get interrupted in our cleanup as we need to wipe sensitive
- * information from memory.
- */
-void
-fatal(const char *fmt, ...)
-{
-	sigset_t	sig;
-	va_list		args;
-
-	if (sigfillset(&sig) == -1)
-		printf("warning: sigfillset failed\n");
-
-	(void)sigprocmask(SIG_BLOCK, &sig, NULL);
-
-	nyfe_zeroize_all();
-	nyfe_file_remove_lingering();
-
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-
-	fprintf(stderr, "\n");
-
-	exit(1);
 }
 
 /* Signal handler callback, install below via sigaction(). */
@@ -323,21 +293,21 @@ setup_signals(void)
 	sa.sa_handler = sighdlr;
 
 	if (sigfillset(&sa.sa_mask) == -1)
-		fatal("sigfillset failed");
+		nyfe_fatal("sigfillset failed");
 
 	if (sigaction(SIGQUIT, &sa, NULL) == -1)
-		fatal("sigaction: %s", errno_s);
+		nyfe_fatal("sigaction: %s", errno_s);
 	if (sigaction(SIGHUP, &sa, NULL) == -1)
-		fatal("sigaction: %s", errno_s);
+		nyfe_fatal("sigaction: %s", errno_s);
 	if (sigaction(SIGTERM, &sa, NULL) == -1)
-		fatal("sigaction: %s", errno_s);
+		nyfe_fatal("sigaction: %s", errno_s);
 	if (sigaction(SIGINT, &sa, NULL) == -1)
-		fatal("sigaction: %s", errno_s);
+		nyfe_fatal("sigaction: %s", errno_s);
 
 	sa.sa_handler = sigmemfault;
 
 	if (sigaction(SIGSEGV, &sa, NULL) == -1)
-		fatal("sigaction: %s", errno_s);
+		nyfe_fatal("sigaction: %s", errno_s);
 
 	/* Block all other signals from being delivered. */
 	sigdelset(&sa.sa_mask, SIGHUP);
@@ -359,14 +329,14 @@ setup_env(void)
 
 #if !defined(__APPLE__)
 	if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1)
-		fatal("mlock: %s", errno_s);
+		nyfe_fatal("mlock: %s", errno_s);
 #endif
 
 	rlim.rlim_cur = 0;
 	rlim.rlim_max = 0;
 
 	if (setrlimit(RLIMIT_CORE, &rlim) == -1)
-		fatal("setrlimit(RLIMIT_CORE): %s", errno_s);
+		nyfe_fatal("setrlimit(RLIMIT_CORE): %s", errno_s);
 }
 
 /*
@@ -380,14 +350,14 @@ setup_paths(void)
 	struct passwd		*pw;
 
 	if ((pw = getpwuid(getuid())) == NULL)
-		fatal("who are you? (%s)", errno_s);
+		nyfe_fatal("who are you? (%s)", errno_s);
 
 	len = snprintf(homedir, sizeof(homedir), "%s/.nyfe", pw->pw_dir);
 	if (len == -1 || (size_t)len >= sizeof(homedir))
-		fatal("failed to construct path to homedir");
+		nyfe_fatal("failed to construct path to homedir");
 
 	if (mkdir(homedir, 0700) == -1 && errno != EEXIST)
-		fatal("failed to create '%s': %s", homedir, errno_s);
+		nyfe_fatal("failed to create '%s': %s", homedir, errno_s);
 }
 
 /* Nyfe usage callback. */
@@ -473,7 +443,7 @@ path_default_keyfile(void)
 
 	len = snprintf(path, sizeof(path), "%s/secret.key", homedir);
 	if (len == -1 || (size_t)len >= sizeof(path))
-		fatal("failed to construct path to default keyfile");
+		nyfe_fatal("failed to construct path to default keyfile");
 
 	return (path);
 }
@@ -517,7 +487,7 @@ cmd_test(int argc, char **argv)
 	nyfe_agelas_init(&cipher, key, sizeof(key));
 
 	if ((block = calloc(1, 1024 * 1024)) == NULL)
-		fatal("failed to allocate test buffer");
+		nyfe_fatal("failed to allocate test buffer");
 
 	speed = 0;
 	total = 0;
@@ -562,7 +532,7 @@ cmd_prng_test(int argc, char **argv)
 	for (;;) {
 		nyfe_random_bytes(data, sizeof(data));
 		if (write(STDOUT_FILENO, data, sizeof(data)) == -1)
-			fatal("failed to write to stdout");
+			nyfe_fatal("failed to write to stdout");
 	}
 }
 
@@ -619,10 +589,10 @@ encrypt_decrypt(int argc, char **argv, int encrypt)
 	argv += optind;
 
 	if (keyfile != NULL && derive_key)
-		fatal("-f and -p are mutually exclusive options");
+		nyfe_fatal("-f and -p are mutually exclusive options");
 
 	if (keyfile == NULL && red_key == 1)
-		fatal("-r must be used with -f");
+		nyfe_fatal("-r must be used with -f");
 
 	if (derive_key == 0 && keyfile == NULL)
 		keyfile = path_default_keyfile();

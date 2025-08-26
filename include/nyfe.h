@@ -41,7 +41,7 @@
 #define PRECOND(x)							\
 	do {								\
 		if (!(x)) {						\
-			fatal("precondition failed in %s:%s:%d\n",	\
+			nyfe_fatal("precondition failed in %s:%s:%d\n",	\
 			    __FILE__, __func__, __LINE__);		\
 		}							\
 	} while (0)
@@ -49,7 +49,7 @@
 #define VERIFY(x)							\
 	do {								\
 		if (!(x)) {						\
-			fatal("verification failed in %s:%s:%d\n",	\
+			nyfe_fatal("verification failed in %s:%s:%d\n",	\
 			    __FILE__, __func__, __LINE__);		\
 		}							\
 	} while (0)
@@ -67,7 +67,6 @@ struct nyfe_key {
 void	nyfe_output_spin(void);
 int	nyfe_signal_pending(void);
 void	nyfe_read_passphrase(void *, size_t);
-void	fatal(const char *, ...) __attribute__((noreturn));
 void	nyfe_output(const char *, ...) __attribute__((format (printf, 1, 2)));
 
 const char	*nyfe_entropy_path(void);

@@ -41,7 +41,8 @@ LIBSRC=	src/agelas.c \
 	src/mem.c \
 	src/passphrase.c \
 	src/sha3.c \
-	src/random.c
+	src/random.c \
+	src/utils.c
 
 SRC+=	$(LIBSRC)
 
@@ -92,7 +93,7 @@ $(VERSION): $(OBJDIR) force
 	    `date +"%Y-%m-%d"` >> $(VERSION);
 
 clean:
-	rm -rf $(OBJDIR) $(BIN)
+	rm -rf $(OBJDIR) $(BIN) $(LIB)
 	$(MAKE) -C tests clean
 
 .PHONY: all clean force
