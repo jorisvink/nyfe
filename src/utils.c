@@ -24,7 +24,7 @@
 #include "libnyfe.h"
 
 /* The application installed error callback. */
-static void	(*fatal_callback)(const char *, va_list);
+static void	(*fatal_callback)(const char *, va_list) = NULL;
 
 /*
  * Set the callback that nyfe calls upon encountering a very fatal error.
@@ -64,7 +64,7 @@ nyfe_fatal(const char *fmt, ...)
 	va_start(args, fmt);
 
 	if (fatal_callback == NULL) {
-		fprintf("nyfe error: ");
+		fprintf(stderr, "nyfe error: ");
 		vfprintf(stderr, fmt, args);
 		fprintf(stderr, "\n");
 	} else {
