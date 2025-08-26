@@ -50,13 +50,15 @@ nyfe_fatal_callback(void (*cb)(const char *, va_list))
 void
 nyfe_fatal(const char *fmt, ...)
 {
-	sigset_t	sig;
 	va_list		args;
+#if !defined(NYFE_PLATFORM_WINDOWS)
+	sigset_t	sig;
 
 	if (sigfillset(&sig) == -1)
 		printf("warning: sigfillset failed\n");
 
 	(void)sigprocmask(SIG_BLOCK, &sig, NULL);
+#endif
 
 	nyfe_zeroize_all();
 	nyfe_file_remove_lingering();
