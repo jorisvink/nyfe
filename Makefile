@@ -29,6 +29,8 @@ else ifeq ("$(OSNAME)", "windows")
 	CFLAGS+=-DNYFE_PLATFORM_WINDOWS
 else ifeq ("$(OSNAME)", "esp32")
 	CFLAGS+=-DNYFE_PLATFORM_ESP32
+else ifeq ("$(OSNAME)", "ios")
+	CFLAGS+=-DNYFE_PLATFORM_IOS
 endif
 
 SRC=	src/nyfe.c \
