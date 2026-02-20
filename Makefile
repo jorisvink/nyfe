@@ -36,7 +36,6 @@ endif
 SRC=	src/nyfe.c \
 	src/crypto.c \
 	src/keys.c \
-	src/selftest.c
 
 LIBSRC=	src/agelas.c \
 	src/file.c \
@@ -46,6 +45,7 @@ LIBSRC=	src/agelas.c \
 	src/passphrase.c \
 	src/sha3.c \
 	src/random.c \
+	src/selftest.c \
 	src/utils.c
 
 SRC+=	$(LIBSRC)

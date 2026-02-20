@@ -81,9 +81,6 @@ void	nyfe_key_from_passphrase(struct nyfe_key *);
 void	nyfe_key_generate(const char *, struct nyfe_key *);
 void	nyfe_key_load(struct nyfe_key *, const char *, int);
 
-/* src/selftests.c */
-void	nyfe_selftest_kmac256(void);
-
 /* version information. */
 extern const char	*nyfe_version;
 extern const char	*nyfe_build_date;
